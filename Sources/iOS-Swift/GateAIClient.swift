@@ -1,0 +1,129 @@
+import Foundation
+
+public final class GateAIClient: @unchecked Sendable {
+    private let configuration: GateAIConfiguration
+    private let authSession: GateAIAuthSession
+    private let urlSession: URLSession
+
+    public init(
+        configuration: GateAIConfiguration,
+        urlSession: URLSession = .shared,
+        appAttestProvider: GateAIAppAttestProvider? = nil
+    ) {
+        self.configuration = configuration
+        self.urlSession = urlSession
+        let httpClient = GateAIHTTPClient(configuration: configuration, session: urlSession)
+        let apiClient = AuthAPIClient(httpClient: httpClient)
+        let deviceKeyService = DeviceKeyService(bundleIdentifier: configuration.bundleIdentifier)
+        let attestProvider: GateAIAppAttestProvider
+        if let appAttestProvider {
+            attestProvider = appAttestProvider
+        } else {
+            attestProvider = GateAIClient.makeDefaultAppAttestProvider(bundleIdentifier: configuration.bundleIdentifier)
+        }
+        self.authSession = GateAIAuthSession(
+            configuration: configuration,
+            apiClient: apiClient,
+            deviceKeyService: deviceKeyService,
+            appAttestService: attestProvider
+        )
+    }
+
+    public func authorizationHeaders(for url: URL, method: HTTPMethod, nonce: String? = nil) async throws -> [String: String] {
+        let context = try await authSession.authorizationHeaders(for: url, method: method, nonce: nonce)
+        return [
+            "Authorization": "Bearer \(context.accessToken)",
+            "DPoP": context.dpop
+        ]
+    }
+
+    public func authorizationHeaders(for path: String, method: HTTPMethod, nonce: String? = nil) async throws -> [String: String] {
+        let url = configuration.baseURL.appendingPathComponent(path)
+        return try await authorizationHeaders(for: url, method: method, nonce: nonce)
+    }
+
+    public func currentAccessToken() async throws -> String {
+        return try await authSession.accessToken()
+    }
+
+    public func clearCachedState() async {
+        await authSession.reset()
+    }
+
+    public func extractDPoPNonce(from error: Error) -> String? {
+        guard let gateError = error as? GateAIError else { return nil }
+        if case let .server(_, _, headers) = gateError {
+            return headers?[caseInsensitive: "DPoP-Nonce"]
+        }
+        return nil
+    }
+
+    private static func makeDefaultAppAttestProvider(bundleIdentifier: String) -> GateAIAppAttestProvider {
+        #if canImport(DeviceCheck)
+        if #available(iOS 14.0, *) {
+            return AppAttestService(bundleIdentifier: bundleIdentifier)
+        }
+        #endif
+        return UnsupportedAppAttestService()
+    }
+
+    public func performProxyRequest(
+        to url: URL,
+        method: HTTPMethod,
+        body: Data? = nil,
+        additionalHeaders: [String: String] = [:]
+    ) async throws -> (Data, HTTPURLResponse) {
+        try await executeProxyRequest(url: url, method: method, body: body, additionalHeaders: additionalHeaders)
+    }
+
+    public func performProxyRequest(
+        path: String,
+        method: HTTPMethod,
+        body: Data? = nil,
+        additionalHeaders: [String: String] = [:]
+    ) async throws -> (Data, HTTPURLResponse) {
+        let url = configuration.baseURL.appendingPathComponent(path)
+        return try await executeProxyRequest(url: url, method: method, body: body, additionalHeaders: additionalHeaders)
+    }
+
+    private func executeProxyRequest(
+        url: URL,
+        method: HTTPMethod,
+        body: Data?,
+        additionalHeaders: [String: String]
+    ) async throws -> (Data, HTTPURLResponse) {
+        let initial = try await sendProxyRequest(url: url, method: method, body: body, additionalHeaders: additionalHeaders, nonce: nil)
+        if initial.response.statusCode == 401,
+           let nonce = initial.response.value(forHTTPHeaderField: "DPoP-Nonce") {
+            // Server returned a nonce challenge—sign a fresh proof including the nonce and retry once.
+            return try await sendProxyRequest(url: url, method: method, body: body, additionalHeaders: additionalHeaders, nonce: nonce)
+        }
+        return initial
+    }
+
+    private func sendProxyRequest(
+        url: URL,
+        method: HTTPMethod,
+        body: Data?,
+        additionalHeaders: [String: String],
+        nonce: String?
+    ) async throws -> (data: Data, response: HTTPURLResponse) {
+        var request = URLRequest(url: url)
+        request.httpMethod = method.rawValue
+        request.httpBody = body
+        for (header, value) in additionalHeaders {
+            request.setValue(value, forHTTPHeaderField: header)
+        }
+
+        let authHeaders = try await authorizationHeaders(for: url, method: method, nonce: nonce)
+        for (header, value) in authHeaders {
+            request.setValue(value, forHTTPHeaderField: header)
+        }
+
+        let (data, response) = try await urlSession.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GateAIError.invalidResponse
+        }
+        return (data, httpResponse)
+    }
+}
