@@ -163,59 +163,61 @@ For any issues during integration, capture the API error payloads (minus sensiti
 
 # Sequence Diagram
 
-    sequenceDiagram
-      autonumber
-      participant App
-      participant Client as GateAIClient
-      participant Session as GateAIAuthSession
-      participant KeySvc as DeviceKeyService
-      participant Attest as AppAttestService
-      participant API as AuthAPIClient
-      participant AuthServer as Gate/AI Auth API
-      participant Proxy as Gate/AI Proxy Endpoint
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App
+  participant Client as GateAIClient
+  participant Session as GateAIAuthSession
+  participant KeySvc as DeviceKeyService
+  participant Attest as AppAttestService
+  participant API as AuthAPIClient
+  participant AuthServer as Gate/AI Auth API
+  participant Proxy as Gate/AI Proxy Endpoint
 
-      App->>Client: authorizationHeaders(path, method)
-      Client->>Session: authorizationHeaders(url, method)
-      Note left of Session: Check cached token expiry\n(& DPoP builder)
+  App->>Client: authorizationHeaders(path, method)
+  Client->>Session: authorizationHeaders(url, method)
+  Note left of Session: Check cached token expiry\n(& DPoP builder)
 
-      alt Missing or expiring token
-          Session->>KeySvc: loadOrCreateKey()
-          KeySvc-->>Session: DeviceKeyMaterial(jwk, thumbprint, privateKey)
+  alt Missing or expiring token
+    Session->>KeySvc: loadOrCreateKey()
+    KeySvc-->>Session: DeviceKeyMaterial(jwk, thumbprint, privateKey)
 
-          Session->>API: fetchChallenge()
-          API->>AuthServer: POST /attest/challenge {"purpose":"token"}
-          AuthServer-->>API: {nonce, exp}
-          API-->>Session: ChallengeResponse
+    Session->>API: fetchChallenge()
+    API->>AuthServer: POST /attest/challenge {"purpose":"token"}
+    AuthServer-->>API: {nonce, exp}
+    API-->>Session: ChallengeResponse
 
-          Session->>Attest: ensureKeyID()
-          Attest-->>Session: appAttestKeyId
-          Session->>Attest: generateAssertion(keyID, clientDataHash)
-          Attest-->>Session: assertion (DER)
+    Session->>Attest: ensureKeyID()
+    Attest-->>Session: appAttestKeyId
+    Session->>Attest: generateAssertion(keyID, clientDataHash)
+    Attest-->>Session: assertion (DER)
 
-          Session->>Session: build DPoP proof (/token)
-          Session->>API: exchangeToken(body, dpop)
-          API->>AuthServer: POST /token {..., dpop}
-          AuthServer-->>API: {access_token, expires_in}
-          API-->>Session: TokenResponse
-          Session->>Session: cache token + expiry
-      else Token valid
-          Note right of Session: Reuse cached\naccess token
-      end
+    Session->>Session: build DPoP proof (/token)
+    Session->>API: exchangeToken(body, dpop)
+    API->>AuthServer: POST /token {..., dpop}
+    AuthServer-->>API: {access_token, expires_in}
+    API-->>Session: TokenResponse
+    Session->>Session: cache token + expiry
+  else Token valid
+    Note right of Session: Reuse cached\naccess token
+  end
 
-      Session->>Session: build per-request DPoP proof
-      Session-->>Client: AuthorizationContext(token, dpop)
-      Client-->>App: {Authorization: Bearer…, DPoP:…}
+  Session->>Session: build per-request DPoP proof
+  Session-->>Client: AuthorizationContext(token, dpop)
+  Client-->>App: {Authorization: Bearer…, DPoP:…}
 
-      App->>Proxy: HTTPS request with headers/body
-      Proxy-->>App: Response payload
+  App->>Proxy: HTTPS request with headers/body
+  Proxy-->>App: Response payload
 
-      opt 401 with DPoP-Nonce
-          Proxy-->>App: 401 + DPoP-Nonce
-          App->>Client: authorizationHeaders(..., nonce)
-          Client->>Session: authorizationHeaders(..., nonce)
-          Session->>Session: rebuild DPoP including nonce
-          Session-->>Client: updated headers
-          Client-->>App: resend headers
-          App->>Proxy: Retry request
-          Proxy-->>App: Response payload
-      end
+  opt 401 with DPoP-Nonce
+    Proxy-->>App: 401 + DPoP-Nonce
+    App->>Client: authorizationHeaders(..., nonce)
+    Client->>Session: authorizationHeaders(..., nonce)
+    Session->>Session: rebuild DPoP including nonce
+    Session-->>Client: updated headers
+    Client-->>App: resend headers
+    App->>Proxy: Retry request
+    Proxy-->>App: Response payload
+  end
+```
