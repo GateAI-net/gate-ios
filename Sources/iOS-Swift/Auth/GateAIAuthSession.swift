@@ -10,6 +10,7 @@ actor GateAIAuthSession {
     private let apiClient: AuthAPIClient
     private let deviceKeyService: DeviceKeyService
     private let appAttestService: GateAIAppAttestProvider
+    private let developmentToken: String?
     private var deviceKeyMaterial: DeviceKeyMaterial?
     private var dpopBuilder: DPoPTokenBuilder?
     private var cachedToken: String?
@@ -20,12 +21,14 @@ actor GateAIAuthSession {
         configuration: GateAIConfiguration,
         apiClient: AuthAPIClient,
         deviceKeyService: DeviceKeyService,
-        appAttestService: GateAIAppAttestProvider
+        appAttestService: GateAIAppAttestProvider,
+        developmentToken: String?
     ) {
         self.configuration = configuration
         self.apiClient = apiClient
         self.deviceKeyService = deviceKeyService
         self.appAttestService = appAttestService
+        self.developmentToken = developmentToken
     }
 
     func authorizationHeaders(for url: URL, method: HTTPMethod, nonce: String? = nil) async throws -> AuthorizationContext {
@@ -87,6 +90,19 @@ actor GateAIAuthSession {
             throw GateAIError.secureEnclaveUnavailable
         }
 
+        if shouldUseDevelopmentFlow {
+            return try await mintUsingDevelopmentToken(material: material, builder: builder)
+        }
+
+        return try await mintUsingAppAttest(material: material, builder: builder)
+    }
+
+    private var shouldUseDevelopmentFlow: Bool {
+        guard Platform.isSimulator, let token = developmentToken, !token.isEmpty else { return false }
+        return true
+    }
+
+    private func mintUsingAppAttest(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {
         let challenge = try await apiClient.fetchChallenge()
         guard let nonceData = challenge.nonce.base64URLDecodedData
                 ?? Data(base64Encoded: challenge.nonce)
@@ -95,29 +111,69 @@ actor GateAIAuthSession {
         }
 
         let clientDataHash = Hashing.appAttestClientDataHash(nonce: nonceData, canonicalJWK: material.jwk.canonicalData())
-        let keyID = try await appAttestService.ensureKeyID()
-        let assertion = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
-        let assertionBase64 = assertion.base64EncodedString()
 
-        let tokenURL = configuration.baseURL.appendingPathComponent("token")
+        let keyID: String
+        do {
+            keyID = try await appAttestService.ensureKeyID()
+        } catch let error as GateAIError {
+            throw error
+        } catch {
+            throw GateAIError.attestationUnavailable
+        }
+
+        let assertionData: Data
+        do {
+            assertionData = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
+        } catch let error as GateAIError {
+            throw error
+        } catch {
+            throw GateAIError.attestationUnavailable
+        }
+
         let attestation = TokenRequestBody.Attestation(
             type: "app_attest",
             keyId: keyID,
             teamId: configuration.teamIdentifier,
-            assertion: assertionBase64
+            assertion: assertionData.base64EncodedString()
         )
+
+        return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+    }
+
+    private func mintUsingDevelopmentToken(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {
+        guard Platform.isSimulator else {
+            throw GateAIError.configuration("Development token flow is restricted to the simulator.")
+        }
+        guard let token = developmentToken, !token.isEmpty else {
+            throw GateAIError.configuration("Development token is missing or empty.")
+        }
+
+        return try await exchangeToken(material: material, builder: builder, attestation: nil, devToken: token)
+    }
+
+    private func exchangeToken(
+        material: DeviceKeyMaterial,
+        builder: DPoPTokenBuilder,
+        attestation: TokenRequestBody.Attestation?,
+        devToken: String?
+    ) async throws -> TokenResponse {
+        let tokenURL = configuration.baseURL.appendingPathComponent("token")
         let appDescriptor = TokenRequestBody.AppDescriptor(bundleId: configuration.bundleIdentifier)
 
-        let initialProof = try builder.proof(httpMethod: .post, url: tokenURL)
-        let initialBody = TokenRequestBody(
-            app: appDescriptor,
-            deviceKeyJwk: material.jwk,
-            attestation: attestation,
-            dpop: initialProof
-        )
+        func sendTokenRequest(with nonce: String?) async throws -> TokenResponse {
+            let proof = try builder.proof(httpMethod: .post, url: tokenURL, nonce: nonce)
+            let body = TokenRequestBody(
+                app: appDescriptor,
+                deviceKeyJwk: material.jwk,
+                attestation: attestation,
+                devToken: devToken,
+                dpop: proof
+            )
+            return try await apiClient.exchangeToken(body: body, dpop: proof)
+        }
 
         do {
-            return try await apiClient.exchangeToken(body: initialBody, dpop: initialProof)
+            return try await sendTokenRequest(with: nil)
         } catch let error as GateAIError {
             guard case let .server(status, _, headers) = error,
                   status == 401,
@@ -126,14 +182,7 @@ actor GateAIAuthSession {
             }
 
             // Server requested a proof with the supplied nonce—reissue DPoP and retry once.
-            let retryProof = try builder.proof(httpMethod: .post, url: tokenURL, nonce: nonce)
-            let retryBody = TokenRequestBody(
-                app: appDescriptor,
-                deviceKeyJwk: material.jwk,
-                attestation: attestation,
-                dpop: retryProof
-            )
-            return try await apiClient.exchangeToken(body: retryBody, dpop: retryProof)
+            return try await sendTokenRequest(with: nonce)
         }
     }
 

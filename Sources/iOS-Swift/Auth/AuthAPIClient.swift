@@ -35,7 +35,8 @@ struct TokenRequestBody: Codable, Sendable {
     let platform: String = "ios"
     let app: AppDescriptor
     let deviceKeyJwk: DeviceKeyJWK
-    let attestation: Attestation
+    let attestation: Attestation?
+    let devToken: String?
     let dpop: String
 
     enum CodingKeys: String, CodingKey {
@@ -43,6 +44,7 @@ struct TokenRequestBody: Codable, Sendable {
         case app
         case deviceKeyJwk = "device_key_jwk"
         case attestation
+        case devToken = "dev_token"
         case dpop
     }
 }
@@ -50,10 +52,12 @@ struct TokenRequestBody: Codable, Sendable {
 public struct TokenResponse: Codable, Sendable {
     public let accessToken: String
     public let expiresIn: Int
+    public let mode: String?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
         case expiresIn = "expires_in"
+        case mode
     }
 }
 

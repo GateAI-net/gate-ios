@@ -37,10 +37,17 @@ Create a configuration object where you bootstrap the Gate/AI client (e.g. in an
 ```swift
 import iOS_Swift
 
+#if targetEnvironment(simulator)
+let devToken = Secrets.gateAIDevToken // Load from secure storage or env var
+#else
+let devToken: String? = nil
+#endif
+
 let configuration = GateAIConfiguration(
     baseURL: URL(string: "https://yourteam.us01.gate-ai.net")!,
     bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.example.app",
-    teamIdentifier: "ABCDE12345" // Your Apple Team ID registered with Gate/AI
+    teamIdentifier: "ABCDE12345", // Your Apple Team ID registered with Gate/AI
+    developmentToken: devToken
 )
 
 let gateAIClient = GateAIClient(configuration: configuration)
@@ -116,8 +123,18 @@ This method automatically performs nonce retries and returns the raw `HTTPURLRes
 - Avoid logging raw tokens, assertions, or nonce values. Hash or redact if troubleshooting.
 - Verify the device clock is accurate; skew beyond ±30s can cause `clock_skew` errors.
 
-## 10. Simulator testing (optional workaround)
-App Attest is unavailable on simulator hardware. Consult `Proxy/AUTH-Simulators.md` for the recommended approach (typically a special debug build that mocks App Attest). Consider compiling out Gate/AI networking on the simulator if you do not use the workaround.
+## 10. Simulator testing (Dev Token flow)
+App Attest is unavailable on simulator hardware. Supply a `developmentToken` when constructing `GateAIConfiguration` (as shown above). The library will:
+- Detect simulator builds via `targetEnvironment(simulator)` and call `/token` with the supplied `dev_token` while preserving DPoP + device-key protections.
+- Ignore the token on real devices—App Attest remains mandatory on hardware.
+
+Store Dev Tokens outside of source control (environment variables, CI secrets, or encrypted config files). Rotate or revoke them frequently and keep them scoped to staging-only tenants.
+
+**Quick simulator checklist**
+- ✅ Obtain a Dev Token from the Gate/AI Console (staging only).
+- ✅ Supply the token through the `developmentToken` configuration parameter for simulator builds.
+- ✅ Build/run the app in the simulator; verify `/token` responses include `"mode": "dev"`.
+- ✅ Confirm device builds omit the dev token so App Attest is always used.
 
 ## 11. Updating the package
 Because you referenced the package locally, you need to refresh dependencies manually when the package changes:
@@ -146,59 +163,59 @@ For any issues during integration, capture the API error payloads (minus sensiti
 
 # Sequence Diagram
 
-sequenceDiagram
-  autonumber
-  participant App
-  participant Client as GateAIClient
-  participant Session as GateAIAuthSession
-  participant KeySvc as DeviceKeyService
-  participant Attest as AppAttestService
-  participant API as AuthAPIClient
-  participant AuthServer as Gate/AI Auth API
-  participant Proxy as Gate/AI Proxy Endpoint
+    sequenceDiagram
+      autonumber
+      participant App
+      participant Client as GateAIClient
+      participant Session as GateAIAuthSession
+      participant KeySvc as DeviceKeyService
+      participant Attest as AppAttestService
+      participant API as AuthAPIClient
+      participant AuthServer as Gate/AI Auth API
+      participant Proxy as Gate/AI Proxy Endpoint
 
-  App->>Client: authorizationHeaders(path, method)
-  Client->>Session: authorizationHeaders(url, method)
-  Note left of Session: Check cached token expiry\n(& DPoP builder)
+      App->>Client: authorizationHeaders(path, method)
+      Client->>Session: authorizationHeaders(url, method)
+      Note left of Session: Check cached token expiry\n(& DPoP builder)
 
-  alt Missing or expiring token
-      Session->>KeySvc: loadOrCreateKey()
-      KeySvc-->>Session: DeviceKeyMaterial(jwk, thumbprint, privateKey)
+      alt Missing or expiring token
+          Session->>KeySvc: loadOrCreateKey()
+          KeySvc-->>Session: DeviceKeyMaterial(jwk, thumbprint, privateKey)
 
-      Session->>API: fetchChallenge()
-      API->>AuthServer: POST /attest/challenge {"purpose":"token"}
-      AuthServer-->>API: {nonce, exp}
-      API-->>Session: ChallengeResponse
+          Session->>API: fetchChallenge()
+          API->>AuthServer: POST /attest/challenge {"purpose":"token"}
+          AuthServer-->>API: {nonce, exp}
+          API-->>Session: ChallengeResponse
 
-      Session->>Attest: ensureKeyID()
-      Attest-->>Session: appAttestKeyId
-      Session->>Attest: generateAssertion(keyID, clientDataHash)
-      Attest-->>Session: assertion (DER)
+          Session->>Attest: ensureKeyID()
+          Attest-->>Session: appAttestKeyId
+          Session->>Attest: generateAssertion(keyID, clientDataHash)
+          Attest-->>Session: assertion (DER)
 
-      Session->>Session: build DPoP proof (/token)
-      Session->>API: exchangeToken(body, dpop)
-      API->>AuthServer: POST /token {..., dpop}
-      AuthServer-->>API: {access_token, expires_in}
-      API-->>Session: TokenResponse
-      Session->>Session: cache token + expiry
-  else Token valid
-      Note right of Session: Reuse cached\naccess token
-  end
+          Session->>Session: build DPoP proof (/token)
+          Session->>API: exchangeToken(body, dpop)
+          API->>AuthServer: POST /token {..., dpop}
+          AuthServer-->>API: {access_token, expires_in}
+          API-->>Session: TokenResponse
+          Session->>Session: cache token + expiry
+      else Token valid
+          Note right of Session: Reuse cached\naccess token
+      end
 
-  Session->>Session: build per-request DPoP proof
-  Session-->>Client: AuthorizationContext(token, dpop)
-  Client-->>App: {Authorization: Bearer…, DPoP:…}
+      Session->>Session: build per-request DPoP proof
+      Session-->>Client: AuthorizationContext(token, dpop)
+      Client-->>App: {Authorization: Bearer…, DPoP:…}
 
-  App->>Proxy: HTTPS request with headers/body
-  Proxy-->>App: Response payload
-
-  opt 401 with DPoP-Nonce
-      Proxy-->>App: 401 + DPoP-Nonce
-      App->>Client: authorizationHeaders(..., nonce)
-      Client->>Session: authorizationHeaders(..., nonce)
-      Session->>Session: rebuild DPoP including nonce
-      Session-->>Client: updated headers
-      Client-->>App: resend headers
-      App->>Proxy: Retry request
+      App->>Proxy: HTTPS request with headers/body
       Proxy-->>App: Response payload
-  end
+
+      opt 401 with DPoP-Nonce
+          Proxy-->>App: 401 + DPoP-Nonce
+          App->>Client: authorizationHeaders(..., nonce)
+          Client->>Session: authorizationHeaders(..., nonce)
+          Session->>Session: rebuild DPoP including nonce
+          Session-->>Client: updated headers
+          Client-->>App: resend headers
+          App->>Proxy: Retry request
+          Proxy-->>App: Response payload
+      end

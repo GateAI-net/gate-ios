@@ -25,7 +25,8 @@ public final class GateAIClient: @unchecked Sendable {
             configuration: configuration,
             apiClient: apiClient,
             deviceKeyService: deviceKeyService,
-            appAttestService: attestProvider
+            appAttestService: attestProvider,
+            developmentToken: configuration.developmentToken
         )
     }
 
