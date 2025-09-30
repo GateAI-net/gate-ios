@@ -11,6 +11,7 @@ actor GateAIAuthSession {
     private let deviceKeyService: DeviceKeyService
     private let appAttestService: GateAIAppAttestProvider
     private let developmentToken: String?
+    private let logger: GateAILoggerProtocol
     private var deviceKeyMaterial: DeviceKeyMaterial?
     private var dpopBuilder: DPoPTokenBuilder?
     private var cachedToken: String?
@@ -22,13 +23,15 @@ actor GateAIAuthSession {
         apiClient: AuthAPIClient,
         deviceKeyService: DeviceKeyService,
         appAttestService: GateAIAppAttestProvider,
-        developmentToken: String?
+        developmentToken: String?,
+        logger: GateAILoggerProtocol = GateAILogger.shared
     ) {
         self.configuration = configuration
         self.apiClient = apiClient
         self.deviceKeyService = deviceKeyService
         self.appAttestService = appAttestService
         self.developmentToken = developmentToken
+        self.logger = logger
     }
 
     func authorizationHeaders(for url: URL, method: HTTPMethod, nonce: String? = nil) async throws -> AuthorizationContext {
@@ -53,10 +56,14 @@ actor GateAIAuthSession {
 
     private func ensureValidToken() async throws -> String {
         if let token = cachedToken, let expiry = tokenExpiry, expiry.timeIntervalSinceNow > 60 {
+            logger.debug("Using cached access token (expires in \(Int(expiry.timeIntervalSinceNow))s)")
             return token
         }
 
+        logger.debug("Access token missing or expired, minting new token")
+
         if let existingTask = mintTask {
+            logger.debug("Waiting for existing token mint task")
             let response = try await existingTask.value
             mintTask = nil
             updateTokenCache(with: response)
@@ -72,9 +79,11 @@ actor GateAIAuthSession {
             let response = try await task.value
             updateTokenCache(with: response)
             mintTask = nil
+            logger.info("Successfully minted new access token")
             return response.accessToken
         } catch {
             mintTask = nil
+            logger.error("Failed to mint access token: \(error)")
             throw error
         }
     }
@@ -87,13 +96,16 @@ actor GateAIAuthSession {
     private func mintAccessToken() async throws -> TokenResponse {
         let material = try ensureDeviceKeyMaterial()
         guard let builder = dpopBuilder else {
+            logger.error("Secure Enclave unavailable for DPoP token generation")
             throw GateAIError.secureEnclaveUnavailable
         }
 
         if shouldUseDevelopmentFlow {
+            logger.info("Using development token flow (simulator)")
             return try await mintUsingDevelopmentToken(material: material, builder: builder)
         }
 
+        logger.info("Using App Attest flow (device)")
         return try await mintUsingAppAttest(material: material, builder: builder)
     }
 
@@ -142,12 +154,15 @@ actor GateAIAuthSession {
 
     private func mintUsingDevelopmentToken(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {
         guard Platform.isSimulator else {
+            logger.error("Development token flow attempted on device - not allowed")
             throw GateAIError.configuration("Development token flow is restricted to the simulator.")
         }
         guard let token = developmentToken, !token.isEmpty else {
+            logger.error("Development token is missing or empty")
             throw GateAIError.configuration("Development token is missing or empty.")
         }
 
+        logger.debug("Exchanging development token for access token")
         return try await exchangeToken(material: material, builder: builder, attestation: nil, devToken: token)
     }
 
@@ -188,11 +203,15 @@ actor GateAIAuthSession {
 
     private func ensureDeviceKeyMaterial() throws -> DeviceKeyMaterial {
         if let material = deviceKeyMaterial {
+            logger.debug("Reusing existing device key material")
             return material
         }
+
+        logger.debug("Loading or creating device key material")
         let material = try deviceKeyService.loadOrCreateKey()
         deviceKeyMaterial = material
         dpopBuilder = DPoPTokenBuilder(material: material)
+        logger.info("Device key material ready (thumbprint: \(material.thumbprint))")
         return material
     }
 }

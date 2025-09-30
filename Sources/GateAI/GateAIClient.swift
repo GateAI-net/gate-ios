@@ -4,6 +4,7 @@ public final class GateAIClient: @unchecked Sendable {
     private let configuration: GateAIConfiguration
     private let authSession: GateAIAuthSession
     private let urlSession: URLSession
+    private let logger: GateAILoggerProtocol
 
     public init(
         configuration: GateAIConfiguration,
@@ -12,7 +13,14 @@ public final class GateAIClient: @unchecked Sendable {
     ) {
         self.configuration = configuration
         self.urlSession = urlSession
-        let httpClient = GateAIHTTPClient(configuration: configuration, session: urlSession)
+        self.logger = GateAILogger.shared
+
+        // Configure logger with the provided log level
+        if let gateAILogger = logger as? GateAILogger {
+            gateAILogger.setLogLevel(configuration.logLevel)
+        }
+
+        let httpClient = GateAIHTTPClient(configuration: configuration, session: urlSession, logger: logger)
         let apiClient = AuthAPIClient(httpClient: httpClient)
         let deviceKeyService = DeviceKeyService(bundleIdentifier: configuration.bundleIdentifier)
         let attestProvider: GateAIAppAttestProvider
@@ -26,8 +34,11 @@ public final class GateAIClient: @unchecked Sendable {
             apiClient: apiClient,
             deviceKeyService: deviceKeyService,
             appAttestService: attestProvider,
-            developmentToken: configuration.developmentToken
+            developmentToken: configuration.developmentToken,
+            logger: logger
         )
+
+        logger.info("GateAI client initialized with baseURL: \(configuration.baseURL.absoluteString)")
     }
 
     public func authorizationHeaders(for url: URL, method: HTTPMethod, nonce: String? = nil) async throws -> [String: String] {
@@ -109,6 +120,8 @@ public final class GateAIClient: @unchecked Sendable {
         additionalHeaders: [String: String],
         nonce: String?
     ) async throws -> (data: Data, response: HTTPURLResponse) {
+        logger.debug("Preparing proxy request to: \(url.absoluteString)")
+
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.httpBody = body
@@ -121,10 +134,22 @@ public final class GateAIClient: @unchecked Sendable {
             request.setValue(value, forHTTPHeaderField: header)
         }
 
-        let (data, response) = try await urlSession.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw GateAIError.invalidResponse
+        // Log the proxy request (this will also log the auth headers)
+        logger.logRequest(request, body: body)
+
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                let error = GateAIError.invalidResponse
+                logger.logResponse(response, data: data, error: error)
+                throw error
+            }
+
+            logger.logResponse(httpResponse, data: data, error: nil)
+            return (data, httpResponse)
+        } catch {
+            logger.logResponse(nil, data: nil, error: error)
+            throw error
         }
-        return (data, httpResponse)
     }
 }
