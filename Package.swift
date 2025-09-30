@@ -4,26 +4,26 @@
 import PackageDescription
 
 let package = Package(
-    name: "iOS-Swift",
+    name: "GateAI",
     platforms: [
-        .iOS(.v15)
+        .iOS(.v16)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "iOS-Swift",
-            targets: ["iOS-Swift"]
+            name: "GateAI",
+            targets: ["GateAI"]
         ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "iOS-Swift"
+            name: "GateAI"
         ),
         .testTarget(
-            name: "iOS-SwiftTests",
-            dependencies: ["iOS-Swift"]
+            name: "GateAITests",
+            dependencies: ["GateAI"]
         ),
     ]
 )
