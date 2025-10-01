@@ -5,6 +5,7 @@ public final class GateAIClient: @unchecked Sendable {
     private let authSession: GateAIAuthSession
     private let urlSession: URLSession
     private let logger: GateAILoggerProtocol
+    private let appAttestProvider: GateAIAppAttestProvider
 
     public init(
         configuration: GateAIConfiguration,
@@ -29,6 +30,7 @@ public final class GateAIClient: @unchecked Sendable {
         } else {
             attestProvider = GateAIClient.makeDefaultAppAttestProvider(bundleIdentifier: configuration.bundleIdentifier)
         }
+        self.appAttestProvider = attestProvider
         self.authSession = GateAIAuthSession(
             configuration: configuration,
             apiClient: apiClient,
@@ -60,6 +62,11 @@ public final class GateAIClient: @unchecked Sendable {
 
     public func clearCachedState() async {
         await authSession.reset()
+    }
+
+    public func clearAppAttestKey() throws {
+        logger.info("Clearing App Attest key")
+        try appAttestProvider.clearStoredKey()
     }
 
     public func extractDPoPNonce(from error: Error) -> String? {
