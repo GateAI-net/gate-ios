@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
 import Testing
-@testable import iOS_Swift
+@testable import GateAI
 
 @Test func base64URLDecodingHandlesPadding() throws {
     let original = Data([0xde, 0xad, 0xbe, 0xef])

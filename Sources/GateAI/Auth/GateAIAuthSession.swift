@@ -122,34 +122,101 @@ actor GateAIAuthSession {
             throw GateAIError.configuration("Failed to decode server nonce.")
         }
 
-        let clientDataHash = Hashing.appAttestClientDataHash(nonce: nonceData, canonicalJWK: material.jwk.canonicalData())
+        let canonicalJWK = material.jwk.canonicalData()
+        let canonicalJWKString = material.jwk.canonicalJSONString()
 
-        let keyID: String
-        do {
-            keyID = try await appAttestService.ensureKeyID()
-        } catch let error as GateAIError {
-            throw error
-        } catch {
-            throw GateAIError.attestationUnavailable
+        logger.debug("Nonce (base64url): \(challenge.nonce)")
+        logger.debug("Nonce (hex): \(nonceData.map { String(format: "%02x", $0) }.joined())")
+        logger.debug("Canonical JWK: \(canonicalJWKString)")
+        logger.debug("Device JWK thumbprint: \(material.thumbprint)")
+
+        let clientDataHash = Hashing.appAttestClientDataHash(nonce: nonceData, canonicalJWK: canonicalJWK)
+        logger.debug("Client data hash (hex): \(clientDataHash.map { String(format: "%02x", $0) }.joined())")
+        logger.debug("Client data hash (base64): \(clientDataHash.base64EncodedString())")
+
+        // Try up to 2 times: once with existing key, once with regenerated key if invalid
+        for attempt in 1...2 {
+            let keyID: String
+            do {
+                keyID = try await appAttestService.ensureKeyID()
+            } catch let error as GateAIError {
+                throw error
+            } catch {
+                throw GateAIError.attestationFailed("Failed to ensure attestation key: \(error.localizedDescription)")
+            }
+
+            let assertionData: Data
+            do {
+                logger.debug("Generating attestation/assertion for keyID: \(keyID) (attempt \(attempt))")
+                // Try to generate assertion first (for existing attested keys)
+                assertionData = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
+                logger.debug("Successfully generated assertion data (\(assertionData.count) bytes)")
+            } catch let error as GateAIError {
+                logger.error("GateAI error during assertion generation: \(error)")
+                throw error
+            } catch {
+                let nsError = error as NSError
+                // Error code 0 means key not attested yet, error code 2 means invalid key
+                if nsError.domain == "com.apple.devicecheck.error" {
+                    if nsError.code == 0 {
+                        // Key needs attestation - this is a new key, call registration endpoint
+                        logger.info("Key not attested yet, performing attestation for keyID: \(keyID)")
+                        do {
+                            let attestationData = try await appAttestService.attestKey(keyID: keyID, clientDataHash: clientDataHash)
+                            logger.debug("Successfully attested key (\(attestationData.count) bytes)")
+
+                            // Register the attested key with the server
+                            let registrationURL = configuration.baseURL.appendingPathComponent("attest/register")
+                            let registrationProof = try builder.proof(httpMethod: .post, url: registrationURL, nonce: nil)
+
+                            let registrationBody = RegistrationRequestBody(
+                                app: RegistrationRequestBody.AppDescriptor(bundleId: configuration.bundleIdentifier),
+                                deviceKeyJwk: material.jwk,
+                                attestation: RegistrationRequestBody.AppAttestRegistration(
+                                    type: "app_attest",
+                                    keyId: keyID,
+                                    teamId: configuration.teamIdentifier,
+                                    attestation: attestationData.base64EncodedString()
+                                ),
+                                nonce: challenge.nonce,
+                                dpop: registrationProof
+                            )
+
+                            let _ = try await apiClient.registerAttestation(body: registrationBody, dpop: registrationProof)
+                            logger.info("Successfully registered App Attest key with server")
+
+                            // Mark key as attested locally
+                            try appAttestService.markKeyAsAttested(keyID)
+
+                            // Now mint a token using assertion (subsequent call will succeed)
+                            // Continue to next iteration to generate assertion
+                            continue
+                        } catch {
+                            logger.error("Failed to register attestation: \(error.localizedDescription)")
+                            throw GateAIError.attestationFailed("Failed to register attestation key with server. Please try again.")
+                        }
+                    } else if nsError.code == 2 && attempt == 1 {
+                        // Invalid key - retry with new key
+                        logger.warning("Invalid key detected on attempt \(attempt), will retry with new key")
+                        continue
+                    }
+                }
+                logger.error("System error during assertion generation: \(error.localizedDescription) - \(error)")
+                throw GateAIError.attestationFailed("Failed to generate device attestation. Please try again.")
+            }
+
+            let attestation = TokenRequestBody.Attestation(
+                type: "app_attest",
+                keyId: keyID,
+                teamId: configuration.teamIdentifier,
+                assertion: assertionData.base64EncodedString()
+            )
+
+            return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
         }
 
-        let assertionData: Data
-        do {
-            assertionData = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
-        } catch let error as GateAIError {
-            throw error
-        } catch {
-            throw GateAIError.attestationUnavailable
-        }
-
-        let attestation = TokenRequestBody.Attestation(
-            type: "app_attest",
-            keyId: keyID,
-            teamId: configuration.teamIdentifier,
-            assertion: assertionData.base64EncodedString()
-        )
-
-        return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+        // Should never reach here, but just in case
+        throw GateAIError.attestationFailed("Failed to complete device attestation after multiple attempts.")
     }
 
     private func mintUsingDevelopmentToken(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {

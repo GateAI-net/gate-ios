@@ -3,6 +3,7 @@ import Foundation
 public enum GateAIError: Error, LocalizedError, Sendable {
     case configuration(String)
     case attestationUnavailable
+    case attestationFailed(String)
     case secureEnclaveUnavailable
     case network(underlying: Error)
     case server(statusCode: Int, error: ServerErrorResponse?, headers: [String: String]?)
@@ -16,6 +17,8 @@ public enum GateAIError: Error, LocalizedError, Sendable {
             return message
         case .attestationUnavailable:
             return "App Attest is not supported on this device."
+        case .attestationFailed(let message):
+            return "Device attestation failed: \(message)"
         case .secureEnclaveUnavailable:
             return "Secure Enclave is not available."
         case .network(let underlying):

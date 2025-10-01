@@ -15,8 +15,8 @@ Until the package is published, you will reference it locally:
 1. In Xcode, open your application project/workspace.
 2. Choose **File ▸ Add Packages…**.
 3. Click the **Add Local…** button (bottom-left of the sheet).
-4. Select the `iOS-Swift` directory located at `GateAI/iOS-Swift` in this repository.
-5. Confirm the package addition and add the `iOS-Swift` library product to the target(s) that will call Gate/AI.
+4. Select the `gate-ios` directory located at `GateAI/gate-ios` in this repository.
+5. Confirm the package addition and add the `gate-ios` library product to the target(s) that will call Gate/AI.
 6. In your app target’s **Build Settings**, confirm `Other Linker Flags` already include `-ObjC` (not typically required, but standard for packages). No additional flags are necessary.
 
 > **Note:** When the package is published remotely, you can replace the local reference with the remote Git URL and semantic version.
