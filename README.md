@@ -198,7 +198,7 @@ In Xcode:
 2. Go to **Signing & Capabilities**
 3. Add **App Attest** capability
 
-In Apple Developer Portal:
+In Apple Developer Portal (usually not needed):
 
 1. Go to your app identifier
 2. Enable **App Attest** capability
@@ -206,19 +206,25 @@ In Apple Developer Portal:
 
 ### 2. Register Team ID
 
-Ensure your Apple Team ID is registered with your Gate/AI tenant. Contact your Gate/AI administrator with your:
+Add your Team ID and Bundle Identifier to your Gate.
 
-- Team ID (10 alphanumeric characters, e.g., "ABCDE12345")
-- Bundle Identifier
-- Environment (production/staging)
+1. Go to the [Gate/AI dashboard](https://portal.gate-ai.net/)
+2. Edit your gate, enable iOS support and then add:
+    - Team ID (10 alphanumeric characters, e.g., "ABCDE12345")
+    - Bundle Identifier (com.acme.your-appp)
 
 ### 3. Obtain Development Token (for Simulator)
 
-1. Log into the Gate/AI Console
-2. Navigate to **Developer Settings**
-3. Generate a development token
-4. Store it securely (environment variable or encrypted config)
-5. **Never commit tokens to source control**
+App Attest isn't supported in the simulator. To work around this, we provide a developer token to authenticate 
+when running in the simulator.
+
+1. Go to the [Gate/AI dashboard](https://portal.gate-ai.net/)
+2. View your Gate
+3. Under Developer Tokens, clickon Create Dev Token
+4. Copy the token and add it to your `GateAIConfiguration`. See next: Testing on Simulator
+
+> [!NOTE]
+> Dev Tokens are short lived: either 1 week or 1 month. Follow the sample code and use #if to include only in simulator builds.
 
 ## Testing
 
@@ -242,13 +248,7 @@ let configuration = try GateAIConfiguration(
 
 ### On Device
 
-Physical devices use the full App Attest flow. No development token needed.
-
-### Running Tests
-
-```bash
-swift test
-```
+Physical devices use the full App Attest flow. No development token is needed.
 
 ## Logging
 
@@ -284,9 +284,9 @@ Your team ID must be the 10-character Apple Team ID, not your team name. Find it
 
 ### "Device attestation failed"
 
-- Verify your team ID is registered with your Gate/AI tenant
-- Check bundle ID matches configuration
-- Try resetting: `try client.clearAppAttestKey()`
+- Verify your team ID is registered with your Gate.
+- Check your bundle ID matches your Gate
+- Try resetting: `try client.clearAppAttestKey()`. This should not be necessary. Please create an issue if it was.
 
 ### "Invalid base URL"
 
@@ -296,7 +296,7 @@ Ensure the URL string is valid and includes the protocol:
 
 ## Contributing
 
-We welcome contributions! Here's how you can help:
+We hate using crappy frameworks and want good DX. If you have suggestions please let us know! Pull requests are welcome!
 
 ### Reporting Issues
 
