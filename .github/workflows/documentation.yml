@@ -49,14 +49,14 @@ jobs:
 
       - name: Process DocC Archive for Static Hosting
         run: |
-          # Install docc if not available (Xcode 16 should have it)
-          if ! command -v docc &> /dev/null; then
-            echo "docc command not found, documentation may not be processable"
+          # Check if docc is available via xcrun
+          if ! xcrun --find docc &> /dev/null; then
+            echo "docc command not found via xcrun"
             exit 1
           fi
 
-          # Transform the archive for static hosting
-          $(xcrun --find docc) process-archive \
+          # Transform the archive for static hosting using xcrun
+          xcrun docc process-archive \
             transform-for-static-hosting ${{ steps.find-archive.outputs.archive_path }} \
             --hosting-base-path gate-ios \
             --output-path ./docs
