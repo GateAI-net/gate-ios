@@ -4,11 +4,17 @@
 [![Platform](https://img.shields.io/badge/platform-iOS%2016.0%2B-lightgrey.svg)](https://developer.apple.com/ios/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Secure authentication and API gateway client for iOS applications.
+__Protect your secrets!__
+
+Gate/AI is a secure authentication and API gateway client for mobile apps. It allows you to use secret key protected APIs without actually having the secret in your mobile app. It's an essential piece of security for protecting your secrets. 
+
+This is the supporting framework for iOS. It requires an account with Gate/AI to use. Find out more here: [https://gate-ai.net](https://gate-ai.net)
+
+Access or setup your Gate here: [https://portal.gate-ai.net](https://portal.gate-ai.net)
 
 ## Features
 
-- ✅ **Automatic Authentication**: OAuth 2.0 + DPoP + App Attest flow handled automatically
+- ✅ **Secure Authentication**: OAuth 2.0 + DPoP + App Attest flow handled automatically
 - 🔐 **Secure Enclave**: Device keys stored in hardware-backed security
 - 📱 **App Attest**: Leverages Apple's device attestation framework
 - 🔄 **Token Management**: Automatic token refresh and caching
@@ -21,7 +27,7 @@ Secure authentication and API gateway client for iOS applications.
 - iOS 16.0+ / macOS 13.0+
 - Xcode 16.0+
 - Swift 6.0+
-- Apple Developer account with App Attest entitlement
+- Apple Developer account with App Attest entitlement added to your provisioning profile.
 
 ## Installation
 
@@ -332,62 +338,7 @@ This means you can freely use, modify, and distribute this SDK, including in com
 - [API Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
 
 # Gate/AI Sequence Diagram
+This is what we are doing behind the scenes to securely authenticate using DPoP and then send on your API service request.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant App
-  participant Client as GateAIClient
-  participant Session as GateAIAuthSession
-  participant KeySvc as DeviceKeyService
-  participant Attest as AppAttestService
-  participant API as AuthAPIClient
-  participant AuthServer as Gate/AI Auth API
-  participant Proxy as Gate/AI Proxy Endpoint
+![Sequence diagram of Gate/AI server interactions](mermaid-diagram-2025-09-16-210800.svg)
 
-  App->>Client: authorizationHeaders(path, method)
-  Client->>Session: authorizationHeaders(url, method)
-  Note left of Session: Check cached token expiry\n(& DPoP builder)
-
-  alt Missing or expiring token
-    Session->>KeySvc: loadOrCreateKey()
-    KeySvc-->>Session: DeviceKeyMaterial(jwk, thumbprint, privateKey)
-
-    Session->>API: fetchChallenge()
-    API->>AuthServer: POST /attest/challenge {"purpose":"token"}
-    AuthServer-->>API: {nonce, exp}
-    API-->>Session: ChallengeResponse
-
-    Session->>Attest: ensureKeyID()
-    Attest-->>Session: appAttestKeyId
-    Session->>Attest: generateAssertion(keyID, clientDataHash)
-    Attest-->>Session: assertion (DER)
-
-    Session->>Session: build DPoP proof (/token)
-    Session->>API: exchangeToken(body, dpop)
-    API->>AuthServer: POST /token {..., dpop}
-    AuthServer-->>API: {access_token, expires_in}
-    API-->>Session: TokenResponse
-    Session->>Session: cache token + expiry
-  else Token valid
-    Note right of Session: Reuse cached\naccess token
-  end
-
-  Session->>Session: build per-request DPoP proof
-  Session-->>Client: AuthorizationContext(token, dpop)
-  Client-->>App: {Authorization: Bearer…, DPoP:…}
-
-  App->>Proxy: HTTPS request with headers/body
-  Proxy-->>App: Response payload
-
-  opt 401 with DPoP-Nonce
-    Proxy-->>App: 401 + DPoP-Nonce
-    App->>Client: authorizationHeaders(..., nonce)
-    Client->>Session: authorizationHeaders(..., nonce)
-    Session->>Session: rebuild DPoP including nonce
-    Session-->>Client: updated headers
-    Client-->>App: resend headers
-    App->>Proxy: Retry request
-    Proxy-->>App: Response payload
-  end
-```
