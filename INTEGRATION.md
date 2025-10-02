@@ -35,7 +35,7 @@ Gate/AI relies on App Attest and a Secure Enclave key. Ensure the following:
 Create a configuration object where you bootstrap the Gate/AI client (e.g. in an app-level dependency container):
 
 ```swift
-import iOS_Swift
+import GateAI
 
 #if targetEnvironment(simulator)
 let devToken = Secrets.gateAIDevToken // Load from secure storage or env var
@@ -43,18 +43,35 @@ let devToken = Secrets.gateAIDevToken // Load from secure storage or env var
 let devToken: String? = nil
 #endif
 
-let configuration = GateAIConfiguration(
-    baseURL: URL(string: "https://yourteam.us01.gate-ai.net")!,
-    bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.example.app",
-    teamIdentifier: "ABCDE12345", // Your Apple Team ID registered with Gate/AI
-    developmentToken: devToken
-)
+do {
+    // Option 1: Convenience initializer with String URL (auto-detects bundle ID)
+    let configuration = try GateAIConfiguration(
+        baseURLString: "https://yourteam.us01.gate-ai.net",
+        teamIdentifier: "ABCDE12345", // Your Apple Team ID (must be 10 alphanumeric characters)
+        developmentToken: devToken,
+        logLevel: .info
+    )
 
-let gateAIClient = GateAIClient(configuration: configuration)
+    let gateAIClient = GateAIClient(configuration: configuration)
+
+    // Option 2: Explicit initializer with URL object
+    // let configuration = try GateAIConfiguration(
+    //     baseURL: URL(string: "https://yourteam.us01.gate-ai.net")!,
+    //     bundleIdentifier: "com.example.app",
+    //     teamIdentifier: "ABCDE12345",
+    //     developmentToken: devToken,
+    //     logLevel: .info
+    // )
+} catch {
+    print("Configuration error: \(error.localizedDescription)")
+}
 ```
 
 **Tips**
-- Provide the production base URL for real traffic. For staging, append `-staging` to the subdomain once it’s available (e.g. `yourteam-staging.us01.gate-ai.net`).
+- The initializers validate inputs and throw `GateAIError.configuration` if validation fails.
+- The `teamIdentifier` must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
+- The convenience initializer automatically uses `Bundle.main.bundleIdentifier` if not explicitly provided.
+- Provide the production base URL for real traffic. For staging, append `-staging` to the subdomain once it's available (e.g. `yourteam-staging.us01.gate-ai.net`).
 - If the bundle ID or Team ID differs between QA and production apps, create per-environment configurations.
 
 ## 5. Request headers for proxied calls
