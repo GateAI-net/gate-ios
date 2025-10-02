@@ -6,7 +6,7 @@
 
 __Protect your secrets!__
 
-Gate/AI is a secure authentication and API gateway client for mobile apps. It allows you to use secret key protected APIs without actually having the secret in your mobile app. It's an essential piece of security for protecting your secrets. 
+Gate/AI is a secure authentication and API gateway client for mobile apps. It allows you to use secret key protected APIs without actually having the secret in your mobile app. It's an essential piece of security for protecting your secrets.
 
 This is the supporting framework for iOS. It requires an account with Gate/AI to use. Find out more here: [https://gate-ai.net](https://gate-ai.net)
 
@@ -215,7 +215,7 @@ Add your Team ID and Bundle Identifier to your Gate.
 
 ### 3. Obtain Development Token (for Simulator)
 
-App Attest isn't supported in the simulator. To work around this, we provide a developer token to authenticate 
+App Attest isn't supported in the simulator. To work around this, we provide a developer token to authenticate
 when running in the simulator.
 
 1. Go to the [Gate/AI dashboard](https://portal.gate-ai.net/)
@@ -340,5 +340,4 @@ This means you can freely use, modify, and distribute this SDK, including in com
 # Gate/AI Sequence Diagram
 This is what we are doing behind the scenes to securely authenticate using DPoP and then send on your API service request.
 
-![Sequence diagram of Gate/AI server interactions](mermaid-diagram-2025-09-16-210800.svg)
-
+![Sequence diagram of Gate/AI server interactions](gateai-sequence-diagram@2x.png)
