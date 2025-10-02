@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 Documentation
+    url: https://land-mk-1.github.io/gate-ios/documentation/gateai/
+    about: Read the full documentation before opening an issue
+  - name: 📧 Support
+    url: mailto:support@landmk1.com
+    about: Contact support for account or service-related issues

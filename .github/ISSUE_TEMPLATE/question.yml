@@ -1,0 +1,59 @@
+name: Question
+description: Ask a question about using the SDK
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using the GateAI SDK? We're here to help!
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Before asking, please check
+      options:
+        - label: I have checked the [documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
+          required: true
+        - label: I have searched existing issues to see if this has been asked before
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+      placeholder: "How do I...?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish?
+      placeholder: "I'm trying to implement... and I'm not sure how to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What Have You Tried?
+      description: What approaches have you already attempted?
+      placeholder: "I tried... but..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Relevant Code
+      description: Share any relevant code snippets
+      render: swift
+      placeholder: |
+        let configuration = try GateAIConfiguration(...)
+        let client = GateAIClient(configuration: configuration)
+    validations:
+      required: false
