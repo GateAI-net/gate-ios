@@ -27,24 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List Available Xcode Versions
-        run: ls /Applications/ | grep Xcode
-
-      - name: Select Latest Xcode Version
+      - name: Select Xcode Version
         run: |
-          # Try to use Xcode 16.2 or later (has Swift 6.2), fallback to latest available
-          if [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          elif [ -d "/Applications/Xcode_16.1.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
-          else
-            # Use the latest available Xcode
-            LATEST_XCODE=$(ls -1 /Applications/ | grep "Xcode_" | sort -V | tail -1)
-            sudo xcode-select -s /Applications/${LATEST_XCODE}/Contents/Developer
-          fi
-
-      - name: Verify Swift Version
-        run: swift --version
+          # Use Xcode 16.4 (latest stable with Swift 6.0)
+          sudo xcode-select -s /Applications/Xcode_16.4.0.app/Contents/Developer
+          swift --version
 
       - name: Build Documentation
         run: |
