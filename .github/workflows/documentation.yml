@@ -61,6 +61,67 @@ jobs:
             --hosting-base-path gate-ios \
             --output-path ./docs
 
+      - name: Create Index Redirect
+        run: |
+          # Create a proper index.html that redirects to the documentation
+          cat > ./docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="refresh" content="0; url=/gate-ios/documentation/gateai/">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>GateAI Documentation</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      height: 100vh;
+                      margin: 0;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                  }
+                  .container {
+                      text-align: center;
+                  }
+                  .spinner {
+                      border: 4px solid rgba(255, 255, 255, 0.3);
+                      border-radius: 50%;
+                      border-top: 4px solid white;
+                      width: 40px;
+                      height: 40px;
+                      animation: spin 1s linear infinite;
+                      margin: 20px auto;
+                  }
+                  @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                  }
+                  a {
+                      color: white;
+                      text-decoration: underline;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>GateAI Documentation</h1>
+                  <div class="spinner"></div>
+                  <p>Redirecting to documentation...</p>
+                  <p><a href="/gate-ios/documentation/gateai/">Click here if you are not redirected automatically</a></p>
+              </div>
+              <script>
+                  // Fallback redirect in case meta refresh doesn't work
+                  setTimeout(function() {
+                      window.location.href = '/gate-ios/documentation/gateai/';
+                  }, 100);
+              </script>
+          </body>
+          </html>
+          EOF
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
