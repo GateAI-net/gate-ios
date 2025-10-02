@@ -1,11 +1,40 @@
 import Foundation
 import os.log
 
+/// Logging levels for the Gate/AI SDK.
+///
+/// Log levels control the verbosity of SDK logging output. Levels are ordered from
+/// most verbose (`.debug`) to least verbose (`.off`).
+///
+/// ## Usage
+///
+/// Configure the log level when creating your ``GateAIConfiguration``:
+///
+/// ```swift
+/// let configuration = try GateAIConfiguration(
+///     baseURLString: "https://yourteam.us01.gate-ai.net",
+///     teamIdentifier: "ABCDE12345",
+///     logLevel: .debug  // Enable debug logging
+/// )
+/// ```
 public enum GateAILogLevel: String, CaseIterable, Comparable, Sendable {
+    /// Detailed diagnostic information for debugging.
+    ///
+    /// Includes full request/response bodies and headers (with sensitive values redacted).
     case debug = "DEBUG"
+
+    /// General informational messages about SDK operations.
+    ///
+    /// Includes key events like initialization, authentication success, and token refresh.
     case info = "INFO"
+
+    /// Warning messages for potentially problematic situations.
     case warning = "WARNING"
+
+    /// Error messages for failures and exceptional conditions.
     case error = "ERROR"
+
+    /// Disables all logging from the SDK.
     case off = "OFF"
 
     public static func < (lhs: GateAILogLevel, rhs: GateAILogLevel) -> Bool {
@@ -18,15 +47,48 @@ public enum GateAILogLevel: String, CaseIterable, Comparable, Sendable {
     }
 }
 
+/// Protocol for implementing custom loggers.
+///
+/// The Gate/AI SDK uses this protocol for all logging operations. You can provide your own
+/// implementation to integrate with your app's logging system.
+///
+/// The default implementation (``GateAILogger``) uses `os.log` for system integration.
 public protocol GateAILoggerProtocol {
+    /// Logs a message at the specified level.
+    ///
+    /// - Parameters:
+    ///   - level: The log level.
+    ///   - message: The message to log.
+    ///   - file: The source file (automatically populated).
+    ///   - function: The function name (automatically populated).
+    ///   - line: The line number (automatically populated).
     func log(_ level: GateAILogLevel, _ message: String, file: String, function: String, line: Int)
+
+    /// Logs an outgoing HTTP request.
+    ///
+    /// - Parameters:
+    ///   - request: The URL request being sent.
+    ///   - body: Optional request body data.
     func logRequest(_ request: URLRequest, body: Data?)
+
+    /// Logs an HTTP response.
+    ///
+    /// - Parameters:
+    ///   - response: The URL response received (if any).
+    ///   - data: Optional response data.
+    ///   - error: Optional error that occurred.
     func logResponse(_ response: URLResponse?, data: Data?, error: Error?)
 
-    // Convenience methods with default parameters
+    /// Logs a debug message.
     func debug(_ message: String, file: String, function: String, line: Int)
+
+    /// Logs an informational message.
     func info(_ message: String, file: String, function: String, line: Int)
+
+    /// Logs a warning message.
     func warning(_ message: String, file: String, function: String, line: Int)
+
+    /// Logs an error message.
     func error(_ message: String, file: String, function: String, line: Int)
 }
 
@@ -50,7 +112,35 @@ extension GateAILoggerProtocol {
     }
 }
 
+/// The default logger implementation for the Gate/AI SDK.
+///
+/// `GateAILogger` integrates with the system's unified logging system (`os.log`) and
+/// provides structured, privacy-conscious logging.
+///
+/// ## Features
+///
+/// - Automatically redacts sensitive headers (Authorization, DPoP, API keys, cookies)
+/// - Formats JSON responses for readability
+/// - Includes file, function, and line number context
+/// - Thread-safe logging operations
+/// - Configurable log levels
+///
+/// ## Privacy
+///
+/// The logger automatically redacts sensitive information from logs, including:
+/// - Authorization headers
+/// - DPoP proofs
+/// - API keys
+/// - Cookies
+///
+/// ## Viewing Logs
+///
+/// Logs appear in:
+/// - Xcode console during development
+/// - Console.app (filter by subsystem: "com.gate-ai.sdk")
+/// - System log archives
 public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
+    /// The shared singleton logger instance used by the SDK.
     public static let shared = GateAILogger()
 
     private let osLog = OSLog(subsystem: "com.gate-ai.sdk", category: "GateAI")
@@ -59,6 +149,12 @@ public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
 
     private init() {}
 
+    /// Sets the minimum log level for output.
+    ///
+    /// Messages below this level will be filtered out. The log level is typically set
+    /// automatically based on your ``GateAIConfiguration/logLevel``.
+    ///
+    /// - Parameter level: The minimum level to log.
     public func setLogLevel(_ level: GateAILogLevel) {
         _logLevel.withLock { $0 = level }
     }

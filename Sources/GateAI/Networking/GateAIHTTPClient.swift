@@ -15,8 +15,14 @@ struct HTTPHeaders: Sendable {
     var asDictionary: [String: String] { storage }
 }
 
+/// HTTP methods supported by the Gate/AI SDK.
+///
+/// Currently supports GET and POST methods for making authenticated requests.
 public enum HTTPMethod: String, Sendable {
+    /// The HTTP GET method.
     case get = "GET"
+
+    /// The HTTP POST method.
     case post = "POST"
 }
 

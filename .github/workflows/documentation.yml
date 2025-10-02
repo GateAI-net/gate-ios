@@ -1,0 +1,68 @@
+name: Build and Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: macos-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+
+      - name: Build Documentation
+        run: |
+          xcodebuild docbuild \
+            -scheme GateAI \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ./DerivedData
+
+      - name: Find DocC Archive
+        id: find-archive
+        run: |
+          ARCHIVE_PATH=$(find ./DerivedData -name "*.doccarchive" | head -1)
+          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "Found archive at: $ARCHIVE_PATH"
+
+      - name: Process DocC Archive for Static Hosting
+        run: |
+          # Install docc if not available (Xcode 16 should have it)
+          if ! command -v docc &> /dev/null; then
+            echo "docc command not found, documentation may not be processable"
+            exit 1
+          fi
+
+          # Transform the archive for static hosting
+          $(xcrun --find docc) process-archive \
+            transform-for-static-hosting ${{ steps.find-archive.outputs.archive_path }} \
+            --hosting-base-path gate-ios \
+            --output-path ./docs
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
