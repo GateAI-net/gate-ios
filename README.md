@@ -31,7 +31,7 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-org/gate-ios.git", from: "1.0.0")
+    .package(url: "https://github.com/LAND-MK-1/gate-ios.git", from: "1.0.0")
 ]
 ```
 
@@ -126,12 +126,12 @@ let configuration = try GateAIConfiguration(
 
 ## Documentation
 
-📚 **[Full Documentation](https://your-org.github.io/gate-ios/documentation/gateai/)**
+📚 **[Full Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)**
 
-- [Authentication Guide](https://your-org.github.io/gate-ios/documentation/gateai/authentication)
-- [Making Requests](https://your-org.github.io/gate-ios/documentation/gateai/makingrequests)
-- [Error Handling](https://your-org.github.io/gate-ios/documentation/gateai/errorhandling)
-- [API Reference](https://your-org.github.io/gate-ios/documentation/gateai/)
+- [Authentication Guide](https://land-mk-1.github.io/gate-ios/documentation/gateai/authentication)
+- [Making Requests](https://land-mk-1.github.io/gate-ios/documentation/gateai/makingrequests)
+- [Error Handling](https://land-mk-1.github.io/gate-ios/documentation/gateai/errorhandling)
+- [API Reference](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
 
 ## Usage Examples
 
@@ -306,4 +306,4 @@ Proprietary. See LICENSE file for details.
 
 - [Integration Guide](INTEGRATION.md)
 - [Sample App](../gate-ios-sample-app/)
-- [API Documentation](https://your-org.github.io/gate-ios/)
+- [API Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
