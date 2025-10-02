@@ -207,12 +207,28 @@ sequenceDiagram
 
     Session->>Attest: ensureKeyID()
     Attest-->>Session: appAttestKeyId
+
+    opt First-time key (not yet attested)
+      Session->>Attest: attestKey(keyID, clientDataHash)
+      Note right of Attest: Generate attestation object\n(one-time per key)
+      Attest-->>Session: attestation (DER)
+
+      Session->>Session: build DPoP proof (/attest/register)
+      Session->>API: registerAttestation(body, dpop)
+      API->>AuthServer: POST /attest/register {attestation, device_key_jwk, ...}
+      Note right of AuthServer: Validate & store\nattestation object
+      AuthServer-->>API: {registered: true, key_id}
+      API-->>Session: RegistrationResponse
+      Session->>Attest: markKeyAsAttested(keyID)
+    end
+
     Session->>Attest: generateAssertion(keyID, clientDataHash)
+    Note right of Attest: Generate assertion\n(every token request)
     Attest-->>Session: assertion (DER)
 
     Session->>Session: build DPoP proof (/token)
     Session->>API: exchangeToken(body, dpop)
-    API->>AuthServer: POST /token {..., dpop}
+    API->>AuthServer: POST /token {assertion, device_key_jwk, ...}
     AuthServer-->>API: {access_token, expires_in}
     API-->>Session: TokenResponse
     Session->>Session: cache token + expiry
