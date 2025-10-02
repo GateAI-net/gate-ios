@@ -53,3 +53,129 @@ import Testing
     let hash = Hashing.appAttestClientDataHash(nonce: nonce, canonicalJWK: canonical)
     #expect(hash == expected)
 }
+
+// MARK: - GateAIConfiguration Tests
+
+@Test func configurationAcceptsValidTeamIdentifier() throws {
+    let config = try GateAIConfiguration(
+        baseURL: URL(string: "https://example.gate-ai.net")!,
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "ABCDE12345"
+    )
+    #expect(config.teamIdentifier == "ABCDE12345")
+}
+
+@Test func configurationAcceptsNumericTeamIdentifier() throws {
+    let config = try GateAIConfiguration(
+        baseURL: URL(string: "https://example.gate-ai.net")!,
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "1234567890"
+    )
+    #expect(config.teamIdentifier == "1234567890")
+}
+
+@Test func configurationAcceptsMixedCaseTeamIdentifier() throws {
+    let config = try GateAIConfiguration(
+        baseURL: URL(string: "https://example.gate-ai.net")!,
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "VY76D5S364"
+    )
+    #expect(config.teamIdentifier == "VY76D5S364")
+}
+
+@Test func configurationRejectsShortTeamIdentifier() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURL: URL(string: "https://example.gate-ai.net")!,
+            bundleIdentifier: "com.example.app",
+            teamIdentifier: "ABC123"
+        )
+    }
+}
+
+@Test func configurationRejectsLongTeamIdentifier() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURL: URL(string: "https://example.gate-ai.net")!,
+            bundleIdentifier: "com.example.app",
+            teamIdentifier: "ABCDE123456"
+        )
+    }
+}
+
+@Test func configurationRejectsTeamIdentifierWithSpecialCharacters() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURL: URL(string: "https://example.gate-ai.net")!,
+            bundleIdentifier: "com.example.app",
+            teamIdentifier: "ABCDE-1234"
+        )
+    }
+}
+
+@Test func configurationRejectsTeamIdentifierWithSpaces() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURL: URL(string: "https://example.gate-ai.net")!,
+            bundleIdentifier: "com.example.app",
+            teamIdentifier: "ABCDE 1234"
+        )
+    }
+}
+
+@Test func configurationRejectsEmptyBundleIdentifier() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURL: URL(string: "https://example.gate-ai.net")!,
+            bundleIdentifier: "",
+            teamIdentifier: "ABCDE12345"
+        )
+    }
+}
+
+@Test func convenienceInitializerAcceptsValidURLString() throws {
+    let config = try GateAIConfiguration(
+        baseURLString: "https://example.gate-ai.net",
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "ABCDE12345"
+    )
+    #expect(config.baseURL.absoluteString == "https://example.gate-ai.net")
+}
+
+@Test func convenienceInitializerRejectsInvalidURLString() throws {
+    #expect(throws: GateAIError.self) {
+        try GateAIConfiguration(
+            baseURLString: "",
+            bundleIdentifier: "com.example.app",
+            teamIdentifier: "ABCDE12345"
+        )
+    }
+}
+
+@Test func convenienceInitializerUsesProvidedBundleIdentifier() throws {
+    let config = try GateAIConfiguration(
+        baseURLString: "https://example.gate-ai.net",
+        bundleIdentifier: "com.custom.bundle",
+        teamIdentifier: "ABCDE12345"
+    )
+    #expect(config.bundleIdentifier == "com.custom.bundle")
+}
+
+@Test func configurationSetsDefaultLogLevel() throws {
+    let config = try GateAIConfiguration(
+        baseURL: URL(string: "https://example.gate-ai.net")!,
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "ABCDE12345"
+    )
+    #expect(config.logLevel == .off)
+}
+
+@Test func configurationAcceptsCustomLogLevel() throws {
+    let config = try GateAIConfiguration(
+        baseURL: URL(string: "https://example.gate-ai.net")!,
+        bundleIdentifier: "com.example.app",
+        teamIdentifier: "ABCDE12345",
+        logLevel: .debug
+    )
+    #expect(config.logLevel == .debug)
+}
