@@ -2,7 +2,7 @@ name: Build and Deploy Documentation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: macos-latest
+    runs-on: macos-15  # Use macOS 15 for newer Xcode versions with Swift 6.2
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -27,8 +27,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+      - name: List Available Xcode Versions
+        run: ls /Applications/ | grep Xcode
+
+      - name: Select Latest Xcode Version
+        run: |
+          # Try to use Xcode 16.2 or later (has Swift 6.2), fallback to latest available
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.1.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+          else
+            # Use the latest available Xcode
+            LATEST_XCODE=$(ls -1 /Applications/ | grep "Xcode_" | sort -V | tail -1)
+            sudo xcode-select -s /Applications/${LATEST_XCODE}/Contents/Developer
+          fi
+
+      - name: Verify Swift Version
+        run: swift --version
 
       - name: Build Documentation
         run: |
