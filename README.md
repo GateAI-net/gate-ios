@@ -305,5 +305,5 @@ Proprietary. See LICENSE file for details.
 ## See Also
 
 - [Integration Guide](INTEGRATION.md)
-- [Sample App](../gate-ios-sample-app/)
+- [Sample App](https://github.com/LAND-MK-1/gate-ios-sample-app/)
 - [API Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
