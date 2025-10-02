@@ -1,0 +1,160 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us resolve the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "When I call performProxyRequest, I get an unexpected error..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Initialize client with configuration...
+        2. Call method X with parameters...
+        3. Observe error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: "The request should succeed and return data..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: "Instead, I get an error: 'Device attestation failed'..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Minimal code that reproduces the issue
+      render: swift
+      placeholder: |
+        let configuration = try GateAIConfiguration(
+            baseURLString: "https://yourteam.us01.gate-ai.net",
+            teamIdentifier: "ABCDE12345"
+        )
+        let client = GateAIClient(configuration: configuration)
+        let (data, response) = try await client.performProxyRequest(...)
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message / Logs
+      description: Full error message or relevant log output
+      render: shell
+      placeholder: |
+        Error: Device attestation failed: Invalid key
+    validations:
+      required: false
+
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK Version
+      description: What version of the GateAI SDK are you using?
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: xcode-version
+    attributes:
+      label: Xcode Version
+      description: What version of Xcode are you using?
+      placeholder: "16.0"
+    validations:
+      required: true
+
+  - type: input
+    id: ios-version
+    attributes:
+      label: iOS Version
+      description: What version of iOS are you testing on?
+      placeholder: "16.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Are you testing on a device or simulator?
+      options:
+        - Physical Device
+        - Simulator
+        - Both
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device Model (if applicable)
+      description: What device are you using?
+      options:
+        - iPhone 17 Pro
+        - iPhone 17
+        - iPhone 16 Pro
+        - iPhone 16
+        - iPhone 15 Pro
+        - iPhone 15
+        - iPhone 14 Pro
+        - iPhone 14
+        - iPhone 13 Pro
+        - iPhone 13
+        - iPhone 12 Pro
+        - iPhone 12
+        - iPad Pro
+        - iPad Air
+        - Other (please specify in additional context)
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem
+      placeholder: "This only happens when..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this isn't a duplicate
+          required: true
+        - label: I have included a minimal code sample that reproduces the issue
+          required: false
+        - label: I have tested on the latest version of the SDK
+          required: false

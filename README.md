@@ -2,7 +2,7 @@
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-iOS%2016.0%2B-lightgrey.svg)](https://developer.apple.com/ios/)
-[![License](https://img.shields.io/badge/license-Proprietary-blue.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Secure authentication and API gateway client for iOS applications.
 
@@ -290,17 +290,41 @@ Ensure the URL string is valid and includes the protocol:
 
 ## Contributing
 
-This is a proprietary SDK. For issues or feature requests, contact Gate/AI support.
+We welcome contributions! Here's how you can help:
+
+### Reporting Issues
+
+Found a bug or have a question? [Open an issue](https://github.com/LAND-MK-1/gate-ios/issues) with:
+- Clear description of the problem
+- Steps to reproduce
+- Expected vs actual behavior
+- Xcode version and iOS version
+- Relevant code snippets or error messages
+
+### Submitting Pull Requests
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass (`swift test`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+### Guidelines
+
+- Follow existing code style and conventions
+- Add DocC documentation for public APIs
+- Include tests for new features
+- Update README if adding new functionality
+- Keep PRs focused on a single feature or fix
 
 ## License
 
-Proprietary. See LICENSE file for details.
+MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
-
-- 📧 Email: support@gate-ai.net
-- 📚 Documentation: https://docs.gate-ai.net
-- 🐛 Issues: Contact your Gate/AI administrator
+This means you can freely use, modify, and distribute this SDK, including in commercial applications.
 
 ## See Also
 
