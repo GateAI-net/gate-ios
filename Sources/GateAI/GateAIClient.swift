@@ -11,6 +11,7 @@ import Foundation
 /// - Access token acquisition and automatic refresh
 /// - DPoP proof generation for each request
 /// - Nonce challenge handling with automatic retry
+/// - Analytics headers (device info, app version, locale) on all requests
 ///
 /// ## Usage
 ///
@@ -49,6 +50,10 @@ import Foundation
 /// - ``authorizationHeaders(for:method:nonce:)-8tkvs``
 /// - ``authorizationHeaders(for:method:nonce:)-5wr89``
 ///
+/// ### Analytics
+///
+/// - ``userStatus``
+///
 /// ### Managing State
 ///
 /// - ``currentAccessToken()``
@@ -64,6 +69,20 @@ public final class GateAIClient: @unchecked Sendable {
     private let urlSession: URLSession
     private let logger: GateAILoggerProtocol
     private let appAttestProvider: GateAIAppAttestProvider
+
+    /// Optional user status for analytics (e.g., "free", "premium", "trial").
+    ///
+    /// This value is included in the `X-User-Status` header on all authenticated requests.
+    /// Set this property to track different user segments or subscription tiers in your analytics.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.userStatus = "premium"
+    /// // or
+    /// client.userStatus = "free-trial"
+    /// ```
+    public var userStatus: String?
 
     /// Creates a new Gate/AI client with the specified configuration.
     ///
@@ -136,10 +155,18 @@ public final class GateAIClient: @unchecked Sendable {
     /// ```
     public func authorizationHeaders(for url: URL, method: HTTPMethod, nonce: String? = nil) async throws -> [String: String] {
         let context = try await authSession.authorizationHeaders(for: url, method: method, nonce: nonce)
-        return [
+
+        // Start with auth headers
+        var headers: [String: String] = [
             "Authorization": "Bearer \(context.accessToken)",
             "DPoP": context.dpop
         ]
+
+        // Add analytics headers
+        let analyticsHeaders = AnalyticsHeaders(userStatus: userStatus)
+        headers.merge(analyticsHeaders.headers()) { current, _ in current }
+
+        return headers
     }
 
     /// Generates authorization headers for a path relative to the configured base URL.
