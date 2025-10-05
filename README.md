@@ -335,7 +335,7 @@ This means you can freely use, modify, and distribute this SDK, including in com
 ## See Also
 
 - [Sample App](https://github.com/LAND-MK-1/gate-ios-sample-app/)
-- [API Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
+- [SDK Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
 
 # Gate/AI Sequence Diagram
 This is what we are doing behind the scenes to securely authenticate using DPoP and then send on your API service request.
