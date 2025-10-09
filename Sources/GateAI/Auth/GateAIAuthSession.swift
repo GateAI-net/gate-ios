@@ -162,35 +162,27 @@ actor GateAIAuthSession {
                         // Key needs attestation - this is a new key, call registration endpoint
                         logger.info("Key not attested yet, performing attestation for keyID: \(keyID)")
                         do {
-                            let attestationData = try await appAttestService.attestKey(keyID: keyID, clientDataHash: clientDataHash)
-                            logger.debug("Successfully attested key (\(attestationData.count) bytes)")
-
-                            // Register the attested key with the server
-                            let registrationURL = configuration.baseURL.appendingPathComponent("attest/register")
-                            let registrationProof = try builder.proof(httpMethod: .post, url: registrationURL, nonce: nil)
-
-                            let registrationBody = RegistrationRequestBody(
-                                app: RegistrationRequestBody.AppDescriptor(bundleId: configuration.bundleIdentifier),
-                                deviceKeyJwk: material.jwk,
-                                attestation: RegistrationRequestBody.AppAttestRegistration(
-                                    type: "app_attest",
-                                    keyId: keyID,
-                                    teamId: configuration.teamIdentifier,
-                                    attestation: attestationData.base64EncodedString()
-                                ),
-                                nonce: challenge.nonce,
-                                dpop: registrationProof
+                            try await performAttestationRegistration(
+                                keyID: keyID,
+                                clientDataHash: clientDataHash,
+                                material: material,
+                                builder: builder,
+                                challenge: challenge
                             )
 
-                            let _ = try await apiClient.registerAttestation(body: registrationBody, dpop: registrationProof)
-                            logger.info("Successfully registered App Attest key with server")
+                            // Now generate assertion with the newly registered key
+                            logger.debug("Generating assertion after registration for keyID: \(keyID)")
+                            let newAssertionData = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
+                            logger.debug("Successfully generated assertion data (\(newAssertionData.count) bytes)")
 
-                            // Mark key as attested locally
-                            try appAttestService.markKeyAsAttested(keyID)
+                            let attestation = TokenRequestBody.Attestation(
+                                type: "app_attest",
+                                keyId: keyID,
+                                teamId: configuration.teamIdentifier,
+                                assertion: newAssertionData.base64EncodedString()
+                            )
 
-                            // Now mint a token using assertion (subsequent call will succeed)
-                            // Continue to next iteration to generate assertion
-                            continue
+                            return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
                         } catch {
                             logger.error("Failed to register attestation: \(error.localizedDescription)")
                             throw GateAIError.attestationFailed("Failed to register attestation key with server. Please try again.")
@@ -212,11 +204,67 @@ actor GateAIAuthSession {
                 assertion: assertionData.base64EncodedString()
             )
 
-            return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+            // Try to exchange token - if server says key is not registered, perform registration
+            do {
+                return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+            } catch let error as GateAIError {
+                // Check if this is a server-side attestation registration error
+                if case let .server(statusCode, serverError, _) = error,
+                   statusCode == 401,
+                   serverError?.error == "attestation_failed",
+                   serverError?.errorDescription?.contains("registration required") == true {
+
+                    logger.warning("Server reports attestation key not registered for keyID: \(keyID)")
+
+                    // The key was already attested locally (since generateAssertion succeeded),
+                    // but the server doesn't know about it. We can't re-attest an already-attested key,
+                    // so we need to clear it and generate a new one on the next iteration.
+                    if attempt == 1 {
+                        logger.info("Clearing locally attested key and will retry with new key")
+                        try? appAttestService.clearStoredKey()
+                        continue
+                    }
+                }
+                throw error
+            }
         }
 
         // Should never reach here, but just in case
         throw GateAIError.attestationFailed("Failed to complete device attestation after multiple attempts.")
+    }
+
+    private func performAttestationRegistration(
+        keyID: String,
+        clientDataHash: Data,
+        material: DeviceKeyMaterial,
+        builder: DPoPTokenBuilder,
+        challenge: ChallengeResponse
+    ) async throws {
+        let attestationData = try await appAttestService.attestKey(keyID: keyID, clientDataHash: clientDataHash)
+        logger.debug("Successfully attested key (\(attestationData.count) bytes)")
+
+        // Register the attested key with the server
+        let registrationURL = configuration.baseURL.appendingPathComponent("attest/register")
+        let registrationProof = try builder.proof(httpMethod: .post, url: registrationURL, nonce: nil)
+
+        let registrationBody = RegistrationRequestBody(
+            app: RegistrationRequestBody.AppDescriptor(bundleId: configuration.bundleIdentifier),
+            deviceKeyJwk: material.jwk,
+            attestation: RegistrationRequestBody.AppAttestRegistration(
+                type: "app_attest",
+                keyId: keyID,
+                teamId: configuration.teamIdentifier,
+                attestation: attestationData.base64EncodedString()
+            ),
+            nonce: challenge.nonce,
+            dpop: registrationProof
+        )
+
+        let _ = try await apiClient.registerAttestation(body: registrationBody, dpop: registrationProof)
+        logger.info("Successfully registered App Attest key with server")
+
+        // Mark key as attested locally
+        try appAttestService.markKeyAsAttested(keyID)
     }
 
     private func mintUsingDevelopmentToken(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {
