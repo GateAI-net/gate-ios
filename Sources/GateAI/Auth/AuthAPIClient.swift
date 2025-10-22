@@ -87,6 +87,7 @@ struct TokenRequestBody: Codable, Sendable {
     let deviceKeyJwk: DeviceKeyJWK
     let attestation: Attestation?
     let devToken: String?
+    let nonce: String?
     let dpop: String
 
     enum CodingKeys: String, CodingKey {
@@ -95,6 +96,7 @@ struct TokenRequestBody: Codable, Sendable {
         case deviceKeyJwk = "device_key_jwk"
         case attestation
         case devToken = "dev_token"
+        case nonce
         case dpop
     }
 }
