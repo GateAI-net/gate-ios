@@ -182,7 +182,7 @@ actor GateAIAuthSession {
                                 assertion: newAssertionData.base64EncodedString()
                             )
 
-                            return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+                            return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil, nonce: challenge.nonce)
                         } catch {
                             logger.error("Failed to register attestation: \(error.localizedDescription)")
                             throw GateAIError.attestationFailed("Failed to register attestation key with server. Please try again.")
@@ -206,7 +206,7 @@ actor GateAIAuthSession {
 
             // Try to exchange token - if server says key is not registered, perform registration
             do {
-                return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil)
+                return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil, nonce: challenge.nonce)
             } catch let error as GateAIError {
                 // Check if this is a server-side attestation registration error
                 if case let .server(statusCode, serverError, _) = error,
@@ -278,25 +278,27 @@ actor GateAIAuthSession {
         }
 
         logger.debug("Exchanging development token for access token")
-        return try await exchangeToken(material: material, builder: builder, attestation: nil, devToken: token)
+        return try await exchangeToken(material: material, builder: builder, attestation: nil, devToken: token, nonce: nil)
     }
 
     private func exchangeToken(
         material: DeviceKeyMaterial,
         builder: DPoPTokenBuilder,
         attestation: TokenRequestBody.Attestation?,
-        devToken: String?
+        devToken: String?,
+        nonce challengeNonce: String?
     ) async throws -> TokenResponse {
         let tokenURL = configuration.baseURL.appendingPathComponent("token")
         let appDescriptor = TokenRequestBody.AppDescriptor(bundleId: configuration.bundleIdentifier)
 
-        func sendTokenRequest(with nonce: String?) async throws -> TokenResponse {
-            let proof = try builder.proof(httpMethod: .post, url: tokenURL, nonce: nonce)
+        func sendTokenRequest(with dpopNonce: String?) async throws -> TokenResponse {
+            let proof = try builder.proof(httpMethod: .post, url: tokenURL, nonce: dpopNonce)
             let body = TokenRequestBody(
                 app: appDescriptor,
                 deviceKeyJwk: material.jwk,
                 attestation: attestation,
                 devToken: devToken,
+                nonce: challengeNonce,
                 dpop: proof
             )
             return try await apiClient.exchangeToken(body: body, dpop: proof)
