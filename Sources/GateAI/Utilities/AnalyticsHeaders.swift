@@ -13,7 +13,7 @@ struct AnalyticsHeaders {
     /// Generates a dictionary of analytics headers.
     ///
     /// - Returns: A dictionary with X-prefixed analytics headers.
-    func headers() -> [String: String] {
+    func headers() async -> [String: String] {
         var headers: [String: String] = [:]
 
         // X-Client-Locale: Language and country code (e.g., "es-MX", "en-US")
@@ -27,7 +27,7 @@ struct AnalyticsHeaders {
         }
 
         // X-OS-Version: iOS version (e.g., "17.2")
-        if let osVersion = Self.osVersion() {
+        if let osVersion = await Self.osVersion() {
             headers["X-OS-Version"] = osVersion
         }
 
@@ -37,12 +37,12 @@ struct AnalyticsHeaders {
         }
 
         // X-Device-Identifier: Vendor identifier (UUID string)
-        if let deviceId = Self.deviceIdentifier() {
+        if let deviceId = await Self.deviceIdentifier() {
             headers["X-Device-Identifier"] = deviceId
         }
 
         // X-Device-Type: Device model (e.g., "iPhone", "iPad")
-        if let deviceType = Self.deviceType() {
+        if let deviceType = await Self.deviceType() {
             headers["X-Device-Type"] = deviceType
         }
 
@@ -61,25 +61,25 @@ struct AnalyticsHeaders {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     }
 
-    private static func osVersion() -> String? {
+    private static func osVersion() async -> String? {
         #if canImport(UIKit)
-        return UIDevice.current.systemVersion
+        return await MainActor.run { UIDevice.current.systemVersion }
         #else
         return ProcessInfo.processInfo.operatingSystemVersionString
         #endif
     }
 
-    private static func deviceIdentifier() -> String? {
+    private static func deviceIdentifier() async -> String? {
         #if canImport(UIKit)
-        return UIDevice.current.identifierForVendor?.uuidString
+        return await MainActor.run { UIDevice.current.identifierForVendor?.uuidString }
         #else
         return nil
         #endif
     }
 
-    private static func deviceType() -> String? {
+    private static func deviceType() async -> String? {
         #if canImport(UIKit)
-        return UIDevice.current.model
+        return await MainActor.run { UIDevice.current.model }
         #else
         return "macOS"
         #endif

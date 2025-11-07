@@ -61,7 +61,7 @@ let (data, response) = try await client.performProxyRequest(
 
 ### Authentication
 
-- <doc:Authentication>
+- <doc:Authentication-article>
 
 ### Making Requests
 
@@ -80,12 +80,8 @@ let (data, response) = try await client.performProxyRequest(
 
 ## Platform Support
 
-- iOS 16.0+
-- macOS 13.0+ (for testing)
+GateAI runs on iOS 16.0 or newer, and you can exercise the SDK on macOS 13.0+ simulators for testing workflows.
 
 ## Requirements
 
-- Xcode 16.0 or newer
-- Swift 6.0 or newer
-- Apple Developer account with App Attest entitlement
-- Physical iOS device for production (App Attest requires real hardware)
+GateAI requires Xcode 16+, Swift 6+, an Apple Developer account with App Attest entitlement, and a physical iOS device for production scenarios (App Attest only works on real hardware).
