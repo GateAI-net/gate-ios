@@ -186,7 +186,14 @@ actor GateAIAuthSession {
                             return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil, nonce: challenge.nonce)
                         } catch {
                             logger.error("Failed to register attestation: \(error.localizedDescription)")
-                            throw GateAIError.attestationFailed("Failed to register attestation key with server. Please try again.")
+                            if let gateError = error as? GateAIError {
+                                if case let .server(_, serverError, _) = gateError, let serverError {
+                                    let description = serverError.errorDescription ?? serverError.error
+                                    throw GateAIError.attestationFailed(description)
+                                }
+                                throw gateError
+                            }
+                            throw GateAIError.attestationFailed("Failed to register attestation key with server: \(error.localizedDescription)")
                         }
                     } else if (nsError.code == 2 || nsError.code == 3) && attempt == 1 {
                         // Invalid key or key identifier - retry with new key
@@ -195,7 +202,7 @@ actor GateAIAuthSession {
                     }
                 }
                 logger.error("System error during assertion generation: \(error.localizedDescription) - \(error)")
-                throw GateAIError.attestationFailed("Failed to generate device attestation. Please try again.")
+                throw GateAIError.attestationFailed("Failed to generate device attestation: \(error.localizedDescription)")
             }
 
             let attestation = TokenRequestBody.Attestation(
