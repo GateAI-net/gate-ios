@@ -37,31 +37,15 @@ Create a configuration object where you bootstrap the Gate/AI client (e.g. in an
 ```swift
 import GateAI
 
-#if targetEnvironment(simulator)
-let devToken = Secrets.gateAIDevToken // Load from secure storage or env var
-#else
-let devToken: String? = nil
-#endif
-
 do {
-    // Option 1: Convenience initializer with String URL (auto-detects bundle ID)
     let configuration = try GateAIConfiguration(
         baseURLString: "https://yourteam.us01.gate-ai.net",
-        teamIdentifier: "ABCDE12345", // Your Apple Team ID (must be 10 alphanumeric characters)
-        developmentToken: devToken,
+        teamIdentifier: "ABCDE12345",
         logLevel: .info
     )
 
     let gateAIClient = GateAIClient(configuration: configuration)
-
-    // Option 2: Explicit initializer with URL object
-    // let configuration = try GateAIConfiguration(
-    //     baseURL: URL(string: "https://yourteam.us01.gate-ai.net")!,
-    //     bundleIdentifier: "com.example.app",
-    //     teamIdentifier: "ABCDE12345",
-    //     developmentToken: devToken,
-    //     logLevel: .info
-    // )
+    
 } catch {
     print("Configuration error: \(error.localizedDescription)")
 }
@@ -73,6 +57,7 @@ do {
 - The convenience initializer automatically uses `Bundle.main.bundleIdentifier` if not explicitly provided.
 - Provide the production base URL for real traffic. For staging, append `-staging` to the subdomain once it's available (e.g. `yourteam-staging.us01.gate-ai.net`).
 - If the bundle ID or Team ID differs between QA and production apps, create per-environment configurations.
+- Set `GATE_AI_DEV_TOKEN` in your scheme/CI for simulator runs; the SDK picks it up automatically and ignores it for device builds, so tokens never ship in release binaries.
 
 ## 5. Request headers for proxied calls
 Before calling any Gate/AI proxied endpoint, obtain authorization headers that include the access token and DPoP proof:
@@ -141,15 +126,16 @@ This method automatically performs nonce retries and returns the raw `HTTPURLRes
 - Verify the device clock is accurate; skew beyond ±30s can cause `clock_skew` errors.
 
 ## 10. Simulator testing (Dev Token flow)
-App Attest is unavailable on simulator hardware. Supply a `developmentToken` when constructing `GateAIConfiguration` (as shown above). The library will:
-- Detect simulator builds via `targetEnvironment(simulator)` and call `/token` with the supplied `dev_token` while preserving DPoP + device-key protections.
-- Ignore the token on real devices—App Attest remains mandatory on hardware.
+App Attest is unavailable on simulator hardware. The SDK automatically looks for the `GATE_AI_DEV_TOKEN` environment variable when running in the simulator:
+
+- Detects simulator builds via `targetEnvironment(simulator)` and calls `/token` with the env-provided token while preserving DPoP + device-key protections.
+- Ignores the token on real devices—App Attest remains mandatory on hardware.
 
 Store Dev Tokens outside of source control (environment variables, CI secrets, or encrypted config files). Rotate or revoke them frequently and keep them scoped to staging-only tenants.
 
 **Quick simulator checklist**
 - ✅ Obtain a Dev Token from the Gate/AI Console (staging only).
-- ✅ Supply the token through the `developmentToken` configuration parameter for simulator builds.
+- ✅ Set `GATE_AI_DEV_TOKEN` in your Xcode scheme or CI environment.
 - ✅ Build/run the app in the simulator; verify `/token` responses include `"mode": "dev"`.
 - ✅ Confirm device builds omit the dev token so App Attest is always used.
 

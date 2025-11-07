@@ -92,43 +92,13 @@ if response.statusCode == 200 {
 }
 ```
 
-## Configuration
+## Running on the Simulator
 
-### Basic Configuration
+AppAttest is not available on simulators. In order to make a request to your gated service, you will need to get a dev token from the Gate/AI portal.
 
-```swift
-let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
-    teamIdentifier: "ABCDE12345"
-)
-```
+Set the `GATE_AI_DEV_TOKEN` environment variable in your Xcode scheme (`Cmd + Shift + ,` or Run ▸ Arguments ▸ Environment). The SDK only reads this value when the app is built for the simulator, ensuring dev tokens never ship in device/release builds:
 
-### With Development Token (Simulator)
-
-```swift
-#if targetEnvironment(simulator)
-let devToken = ProcessInfo.processInfo.environment["GATE_AI_DEV_TOKEN"]
-#else
-let devToken: String? = nil
-#endif
-
-let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
-    teamIdentifier: "ABCDE12345",
-    developmentToken: devToken,
-    logLevel: .debug  // Enable detailed logging
-)
-```
-
-### Custom Bundle Identifier
-
-```swift
-let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
-    bundleIdentifier: "com.example.MyApp",  // Override Bundle.main
-    teamIdentifier: "ABCDE12345"
-)
-```
+Note: dev tokens provide unchecked access to your gated service. Keep it safe!
 
 ## Documentation
 
@@ -213,6 +183,7 @@ Add your Team ID and Bundle Identifier to your Gate.
     - Team ID (10 alphanumeric characters, e.g., "ABCDE12345")
     - Bundle Identifier (com.acme.your-appp)
 
+
 ### 3. Obtain Development Token (for Simulator)
 
 App Attest isn't supported in the simulator. To work around this, we provide a developer token to authenticate
@@ -220,31 +191,19 @@ when running in the simulator.
 
 1. Go to the [Gate/AI dashboard](https://portal.gate-ai.net/)
 2. View your Gate
-3. Under Developer Tokens, clickon Create Dev Token
-4. Copy the token and add it to your `GateAIConfiguration`. See next: Testing on Simulator
+3. Under Developer Tokens, click **Create Dev Token**
+4. Copy the token and set the `GATE_AI_DEV_TOKEN` environment variable (Xcode scheme ▸ Run ▸ Arguments ▸ Environment, or your CI secret store)
 
 > [!NOTE]
-> Dev Tokens are short lived: either 1 week or 1 month. Follow the sample code and use #if to include only in simulator builds.
+> Dev Tokens provide unchecked access to your gated service. Keep them out of source control and revoke them when compromised.
 
 ## Testing
 
 ### On Simulator
 
-The SDK automatically uses development token flow on simulator:
-
-```swift
-#if targetEnvironment(simulator)
-let devToken = "your-dev-token"
-#else
-let devToken: String? = nil
-#endif
-
-let configuration = try GateAIConfiguration(
-    baseURLString: "https://staging.us01.gate-ai.net",  // Use staging
-    teamIdentifier: "ABCDE12345",
-    developmentToken: devToken
-)
-```
+1. Create a Dev Token in the [Gate/AI dashboard](https://portal.gate-ai.net/)
+2. Add `GATE_AI_DEV_TOKEN` to your scheme/environment (or CI) with that value
+3. Run the simulator — the SDK reads the env var automatically and uses the dev token flow
 
 ### On Device
 

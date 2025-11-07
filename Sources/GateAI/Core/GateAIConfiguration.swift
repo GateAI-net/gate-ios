@@ -13,14 +13,12 @@ public struct GateAIConfiguration: Sendable {
     ///   - baseURL: The Gate/AI tenant URL (e.g., https://yourteam.us01.gate-ai.net)
     ///   - bundleIdentifier: Your app's bundle identifier. Must not be empty.
     ///   - teamIdentifier: Your Apple Team ID. Must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
-    ///   - developmentToken: Optional development token for simulator testing.
     ///   - logLevel: Logging verbosity level. Defaults to `.off`.
     /// - Throws: `GateAIError.configuration` if any validation fails.
     public init(
         baseURL: URL,
         bundleIdentifier: String,
         teamIdentifier: String,
-        developmentToken: String? = nil,
         logLevel: GateAILogLevel = .off
     ) throws {
         // Validate bundle identifier
@@ -28,13 +26,10 @@ public struct GateAIConfiguration: Sendable {
             throw GateAIError.configuration("bundleIdentifier cannot be empty.")
         }
 
-        // Validate team identifier format (10 alphanumeric characters)
-        try Self.validateTeamIdentifier(teamIdentifier)
-
         self.baseURL = baseURL
         self.bundleIdentifier = bundleIdentifier
         self.teamIdentifier = teamIdentifier
-        self.developmentToken = developmentToken
+        self.developmentToken = Self.resolveDevelopmentToken()
         self.logLevel = logLevel
     }
 
@@ -44,14 +39,12 @@ public struct GateAIConfiguration: Sendable {
     ///   - baseURLString: The Gate/AI tenant URL as a string (e.g., "https://yourteam.us01.gate-ai.net")
     ///   - bundleIdentifier: Your app's bundle identifier. Defaults to `Bundle.main.bundleIdentifier` if available.
     ///   - teamIdentifier: Your Apple Team ID. Must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
-    ///   - developmentToken: Optional development token for simulator testing.
     ///   - logLevel: Logging verbosity level. Defaults to `.off`.
     /// - Throws: `GateAIError.configuration` if the URL is invalid or any validation fails.
     public init(
         baseURLString: String,
         bundleIdentifier: String? = nil,
         teamIdentifier: String,
-        developmentToken: String? = nil,
         logLevel: GateAILogLevel = .off
     ) throws {
         guard let url = URL(string: baseURLString) else {
@@ -71,7 +64,6 @@ public struct GateAIConfiguration: Sendable {
             baseURL: url,
             bundleIdentifier: resolvedBundleID,
             teamIdentifier: teamIdentifier,
-            developmentToken: developmentToken,
             logLevel: logLevel
         )
     }
@@ -96,5 +88,21 @@ public struct GateAIConfiguration: Sendable {
                 "teamIdentifier must contain only alphanumeric characters (A-Z, 0-9). Provided: '\(teamIdentifier)'"
             )
         }
+    }
+
+    private static func resolveDevelopmentToken() -> String? {
+        guard Platform.isSimulator else {
+            return nil
+        }
+        let envToken = ProcessInfo.processInfo.environment["GATE_AI_DEV_TOKEN"]
+        if let envToken, !envToken.isEmpty {
+            return envToken
+        }
+
+        return nil
+    }
+
+    private static func resolveTeamIdentifier(_ provided: String?) throws -> String {
+        fatalError("resolveTeamIdentifier should not be called when teamIdentifier is required")
     }
 }

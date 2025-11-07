@@ -27,27 +27,22 @@ On real iOS devices, the SDK uses the full App Attest flow:
 
 ### In the Simulator
 
-Since App Attest is unavailable in the simulator, the SDK supports a development token flow:
+Since App Attest is unavailable in the simulator, the SDK supports a development token flow. Set the `GATE_AI_DEV_TOKEN` environment variable (Xcode scheme ▸ Run ▸ Arguments ▸ Environment) with the token from the Gate/AI Console and initialize the configuration normally. The SDK only reads this value when the binary is built for the simulator, so the token never ships in device builds:
 
 ```swift
-#if targetEnvironment(simulator)
-let devToken = "your-development-token"
-#else
-let devToken: String? = nil
-#endif
-
 let configuration = try GateAIConfiguration(
     baseURLString: "https://yourteam.us01.gate-ai.net",
-    teamIdentifier: "ABCDE12345",
-    developmentToken: devToken
+    teamIdentifier: "ABCDE12345"
 )
 ```
 
 Development tokens:
-- Should only be used in non-production environments
-- Must be obtained from the Gate/AI Console
+- Provide unchecked access to your gated service
+- Are only intended to be used in simulators or CI
+- Must be obtained from the Gate/AI Portal
 - Should be stored securely (not in source control)
 - Are automatically ignored on physical devices
+- Revoke them in the Gate/AI Portal if you suspect a leak
 
 ## Token Lifecycle
 
