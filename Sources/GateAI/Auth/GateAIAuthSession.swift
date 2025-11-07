@@ -156,7 +156,7 @@ actor GateAIAuthSession {
                 throw error
             } catch {
                 let nsError = error as NSError
-                // Error code 0 means key not attested yet, error code 2 means invalid key
+                // Error code 0 means key not attested yet, error codes 2/3 mean invalid key
                 if nsError.domain == "com.apple.devicecheck.error" {
                     if nsError.code == 0 {
                         // Key needs attestation - this is a new key, call registration endpoint
@@ -187,9 +187,9 @@ actor GateAIAuthSession {
                             logger.error("Failed to register attestation: \(error.localizedDescription)")
                             throw GateAIError.attestationFailed("Failed to register attestation key with server. Please try again.")
                         }
-                    } else if nsError.code == 2 && attempt == 1 {
-                        // Invalid key - retry with new key
-                        logger.warning("Invalid key detected on attempt \(attempt), will retry with new key")
+                    } else if (nsError.code == 2 || nsError.code == 3) && attempt == 1 {
+                        // Invalid key or key identifier - retry with new key
+                        logger.warning("Invalid key detected (error \(nsError.code)) on attempt \(attempt), will retry with new key")
                         continue
                     }
                 }
