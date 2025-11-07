@@ -163,10 +163,10 @@ extension AppAttestService: GateAIAppAttestProvider {
                 }
             }
         } catch {
-            // Check if this is an invalid key error (error code 2)
+            // Check if this is an invalid key error (error codes 2 or 3)
             let nsError = error as NSError
-            if nsError.domain == "com.apple.devicecheck.error" && nsError.code == 2 {
-                GateAILogger.shared.warning("Invalid key detected (error 2), deleting and regenerating...")
+            if nsError.domain == "com.apple.devicecheck.error" && (nsError.code == 2 || nsError.code == 3) {
+                GateAILogger.shared.warning("Invalid key detected (error \(nsError.code)), deleting and regenerating...")
                 try keyStore.deleteKeyID()
                 GateAILogger.shared.info("Deleted invalid key, caller should regenerate")
             }
