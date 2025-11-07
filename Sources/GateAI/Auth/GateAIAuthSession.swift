@@ -115,27 +115,28 @@ actor GateAIAuthSession {
     }
 
     private func mintUsingAppAttest(material: DeviceKeyMaterial, builder: DPoPTokenBuilder) async throws -> TokenResponse {
-        let challenge = try await apiClient.fetchChallenge()
-        guard let nonceData = challenge.nonce.base64URLDecodedData
-                ?? Data(base64Encoded: challenge.nonce)
-                ?? challenge.nonce.data(using: .utf8) else {
-            throw GateAIError.configuration("Failed to decode server nonce.")
-        }
-
         let canonicalJWK = material.jwk.canonicalData()
         let canonicalJWKString = material.jwk.canonicalJSONString()
 
-        logger.debug("Nonce (base64url): \(challenge.nonce)")
-        logger.debug("Nonce (hex): \(nonceData.map { String(format: "%02x", $0) }.joined())")
         logger.debug("Canonical JWK: \(canonicalJWKString)")
         logger.debug("Device JWK thumbprint: \(material.thumbprint)")
 
-        let clientDataHash = Hashing.appAttestClientDataHash(nonce: nonceData, canonicalJWK: canonicalJWK)
-        logger.debug("Client data hash (hex): \(clientDataHash.map { String(format: "%02x", $0) }.joined())")
-        logger.debug("Client data hash (base64): \(clientDataHash.base64EncodedString())")
-
-        // Try up to 2 times: once with existing key, once with regenerated key if invalid
+        // Try up to 2 times: once with existing key, once after regenerating key + challenge if invalid
         for attempt in 1...2 {
+            let challenge = try await apiClient.fetchChallenge()
+            guard let nonceData = challenge.nonce.base64URLDecodedData
+                    ?? Data(base64Encoded: challenge.nonce)
+                    ?? challenge.nonce.data(using: .utf8) else {
+                throw GateAIError.configuration("Failed to decode server nonce.")
+            }
+
+            logger.debug("Attempt \(attempt) nonce (base64url): \(challenge.nonce)")
+            logger.debug("Attempt \(attempt) nonce (hex): \(nonceData.map { String(format: "%02x", $0) }.joined())")
+
+            let clientDataHash = Hashing.appAttestClientDataHash(nonce: nonceData, canonicalJWK: canonicalJWK)
+            logger.debug("Attempt \(attempt) client data hash (hex): \(clientDataHash.map { String(format: "%02x", $0) }.joined())")
+            logger.debug("Attempt \(attempt) client data hash (base64): \(clientDataHash.base64EncodedString())")
+
             let keyID: String
             do {
                 keyID = try await appAttestService.ensureKeyID()
@@ -220,7 +221,7 @@ actor GateAIAuthSession {
                     // but the server doesn't know about it. We can't re-attest an already-attested key,
                     // so we need to clear it and generate a new one on the next iteration.
                     if attempt == 1 {
-                        logger.info("Clearing locally attested key and will retry with new key")
+                        logger.info("Clearing locally attested key, will fetch new challenge and retry")
                         try? appAttestService.clearStoredKey()
                         continue
                     }
