@@ -126,6 +126,12 @@ public final class GateAIClient: @unchecked Sendable {
             logger: logger
         )
 
+        if Platform.isSimulator, (configuration.developmentToken?.isEmpty ?? true) {
+            logger.error(
+                "Simulator build detected but GATE_AI_DEV_TOKEN is not set. Add the environment variable to your scheme (https://portal.gate-ai.net → Create Dev Token)."
+            )
+        }
+
         logger.info("GateAI client initialized with baseURL: \(configuration.baseURL.absoluteString)")
     }
 

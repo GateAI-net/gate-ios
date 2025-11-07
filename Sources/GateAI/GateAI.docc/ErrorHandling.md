@@ -37,7 +37,7 @@ do {
     try await client.performProxyRequest(...)
 } catch GateAIError.attestationUnavailable {
     print("App Attest is not supported on this device")
-    // Solution: Use a physical device or configure a development token
+    // Solution: Use a physical device or set the GATE_AI_DEV_TOKEN env var for simulator testing
 
 } catch GateAIError.attestationFailed(let message) {
     print("Attestation failed: \(message)")
