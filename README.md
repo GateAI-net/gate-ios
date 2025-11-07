@@ -132,12 +132,12 @@ let configuration = try GateAIConfiguration(
 
 ## Documentation
 
-📚 **[Full Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)**
+📚 **[Full Documentation](https://gateai-net.github.io/gate-ios/documentation/gateai/)**
 
-- [Authentication Guide](https://land-mk-1.github.io/gate-ios/documentation/gateai/authentication)
-- [Making Requests](https://land-mk-1.github.io/gate-ios/documentation/gateai/makingrequests)
-- [Error Handling](https://land-mk-1.github.io/gate-ios/documentation/gateai/errorhandling)
-- [API Reference](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
+- [Authentication Guide](https://gateai-net.github.io/gate-ios/documentation/gateai/authentication)
+- [Making Requests](https://gateai-net.github.io/gate-ios/documentation/gateai/makingrequests)
+- [Error Handling](https://gateai-net.github.io/gate-ios/documentation/gateai/errorhandling)
+- [API Reference](https://gateai-net.github.io/gate-ios/documentation/gateai/)
 
 ## Usage Examples
 
@@ -300,7 +300,7 @@ We hate using crappy frameworks and want good DX. If you have suggestions please
 
 ### Reporting Issues
 
-Found a bug or have a question? [Open an issue](https://github.com/LAND-MK-1/gate-ios/issues) with:
+Found a bug or have a question? [Open an issue](https://github.com/GateAI-net/gate-ios/issues) with:
 - Clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
@@ -334,9 +334,8 @@ This means you can freely use, modify, and distribute this SDK, including in com
 
 ## See Also
 
-- [Sample App](https://github.com/LAND-MK-1/gate-ios-sample-app/)
-- [SDK Documentation](https://land-mk-1.github.io/gate-ios/documentation/gateai/)
-
+- [Sample App](https://github.com/GateAI-net/gate-ios-sample-app/)
+- [SDK Documentation](https://gateai-net.github.io/gate-ios/documentation/gateai/)
 # Gate/AI Sequence Diagram
 This is what we are doing behind the scenes to securely authenticate using DPoP and then send on your API service request.
 
