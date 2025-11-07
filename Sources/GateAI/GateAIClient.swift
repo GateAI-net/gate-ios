@@ -47,8 +47,8 @@ import Foundation
 ///
 /// - ``performProxyRequest(path:method:body:additionalHeaders:)``
 /// - ``performProxyRequest(to:method:body:additionalHeaders:)``
-/// - ``authorizationHeaders(for:method:nonce:)-8tkvs``
-/// - ``authorizationHeaders(for:method:nonce:)-5wr89``
+/// - ``authorizationHeaders(for:method:nonce:)(String,_,_)``
+/// - ``authorizationHeaders(for:method:nonce:)(URL,_,_)``
 ///
 /// ### Analytics
 ///
@@ -164,7 +164,8 @@ public final class GateAIClient: @unchecked Sendable {
 
         // Add analytics headers
         let analyticsHeaders = AnalyticsHeaders(userStatus: userStatus)
-        headers.merge(analyticsHeaders.headers()) { current, _ in current }
+        let analyticsValues = await analyticsHeaders.headers()
+        headers.merge(analyticsValues) { current, _ in current }
 
         return headers
     }
@@ -205,7 +206,7 @@ public final class GateAIClient: @unchecked Sendable {
     ///
     /// - Throws: ``GateAIError`` if token minting fails.
     ///
-    /// - Note: In most cases, you should use ``authorizationHeaders(for:method:nonce:)-8tkvs`` or
+    /// - Note: In most cases, you should use ``authorizationHeaders(for:method:nonce:)(String,_,_)`` or
     ///         ``performProxyRequest(path:method:body:additionalHeaders:)`` instead, as they also
     ///         generate the required DPoP proof.
     public func currentAccessToken() async throws -> String {

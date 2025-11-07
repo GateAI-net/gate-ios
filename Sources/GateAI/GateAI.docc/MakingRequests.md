@@ -251,6 +251,6 @@ Debug logs include:
 ## See Also
 
 - ``GateAIClient/performProxyRequest(path:method:body:additionalHeaders:)``
-- ``GateAIClient/authorizationHeaders(for:method:nonce:)-8tkvs``
+- ``GateAIClient/authorizationHeaders(for:method:nonce:)(String,_,_)``
 - ``HTTPMethod``
 - <doc:ErrorHandling>
