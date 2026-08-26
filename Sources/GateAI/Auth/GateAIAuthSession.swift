@@ -146,6 +146,46 @@ actor GateAIAuthSession {
                 throw GateAIError.attestationFailed("Failed to ensure attestation key: \(error.localizedDescription)")
             }
 
+            // A key that has never completed Apple attestation cannot assert —
+            // attest and register it first. (Probing generateAssertion and
+            // relying on devicecheck error 0 is unreliable: some OS versions
+            // return error 3 for unattested keys, which reads as "corrupt key"
+            // and dead-ends the retry loop.)
+            if !appAttestService.hasAttestedKey() {
+                logger.info("Key not yet attested, performing attestation for keyID: \(keyID)")
+                do {
+                    try await performAttestationRegistration(
+                        keyID: keyID,
+                        clientDataHash: clientDataHash,
+                        material: material,
+                        builder: builder,
+                        challenge: challenge
+                    )
+
+                    logger.debug("Generating assertion after registration for keyID: \(keyID)")
+                    let newAssertionData = try await appAttestService.generateAssertion(keyID: keyID, clientDataHash: clientDataHash)
+
+                    let attestation = TokenRequestBody.Attestation(
+                        type: "app_attest",
+                        keyId: keyID,
+                        teamId: configuration.teamIdentifier,
+                        assertion: newAssertionData.base64EncodedString()
+                    )
+
+                    return try await exchangeToken(material: material, builder: builder, attestation: attestation, devToken: nil, nonce: challenge.nonce)
+                } catch {
+                    logger.error("Failed to register attestation: \(error.localizedDescription)")
+                    if let gateError = error as? GateAIError {
+                        if case let .server(_, serverError, _) = gateError, let serverError {
+                            let description = serverError.errorDescription ?? serverError.error
+                            throw GateAIError.attestationFailed(description)
+                        }
+                        throw gateError
+                    }
+                    throw GateAIError.attestationFailed("Failed to register attestation key with server: \(error.localizedDescription)")
+                }
+            }
+
             let assertionData: Data
             do {
                 logger.debug("Generating attestation/assertion for keyID: \(keyID) (attempt \(attempt))")

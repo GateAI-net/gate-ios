@@ -127,6 +127,10 @@ extension AppAttestService: GateAIAppAttestProvider {
         GateAILogger.shared.info("Marked key as attested: \(keyID)")
     }
 
+    func hasAttestedKey() -> Bool {
+        (try? keyStore.loadAttestedKey()) != nil
+    }
+
     func attestKey(keyID: String, clientDataHash: Data) async throws -> Data {
         GateAILogger.shared.debug("Attesting key with Apple: \(keyID)")
         return try await withCheckedThrowingContinuation { continuation in
