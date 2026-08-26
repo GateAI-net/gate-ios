@@ -2,6 +2,9 @@ import Foundation
 
 public protocol GateAIAppAttestProvider: Sendable {
     func ensureKeyID() async throws -> String
+    /// Whether the current stored key has completed Apple attestation.
+    /// New keys must be attested (and registered) before they can assert.
+    func hasAttestedKey() -> Bool
     func markKeyAsAttested(_ keyID: String) throws
     func attestKey(keyID: String, clientDataHash: Data) async throws -> Data
     func generateAssertion(keyID: String, clientDataHash: Data) async throws -> Data
@@ -11,6 +14,10 @@ public protocol GateAIAppAttestProvider: Sendable {
 struct UnsupportedAppAttestService: GateAIAppAttestProvider {
     func ensureKeyID() async throws -> String {
         throw GateAIError.attestationUnavailable
+    }
+
+    func hasAttestedKey() -> Bool {
+        false
     }
 
     func markKeyAsAttested(_ keyID: String) throws {
