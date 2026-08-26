@@ -31,7 +31,7 @@ Since App Attest is unavailable in the simulator, the SDK supports a development
 
 ```swift
 let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
+    baseURLString: "https://yourteam.in.gate-ai.net",
     teamIdentifier: "ABCDE12345"
 )
 ```
@@ -91,7 +91,7 @@ The ``GateAIClient/performProxyRequest(path:method:body:additionalHeaders:)`` me
 
 Development tokens should be:
 
-- Obtained from your staging/development Gate/AI tenant only
+- Obtained from your development Gate/AI tenant only
 - Stored in environment variables or encrypted configuration files
 - Never committed to source control
 - Rotated regularly

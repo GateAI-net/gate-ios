@@ -10,7 +10,7 @@ public struct GateAIConfiguration: Sendable {
     /// Primary initializer with URL validation
     ///
     /// - Parameters:
-    ///   - baseURL: The Gate/AI tenant URL (e.g., https://yourteam.us01.gate-ai.net)
+    ///   - baseURL: The Gate/AI tenant URL (e.g., https://yourteam.in.gate-ai.net)
     ///   - bundleIdentifier: Your app's bundle identifier. Must not be empty.
     ///   - teamIdentifier: Your Apple Team ID. Must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
     ///   - logLevel: Logging verbosity level. Defaults to `.off`.
@@ -36,7 +36,7 @@ public struct GateAIConfiguration: Sendable {
     /// Convenience initializer that accepts a String for the base URL
     ///
     /// - Parameters:
-    ///   - baseURLString: The Gate/AI tenant URL as a string (e.g., "https://yourteam.us01.gate-ai.net")
+    ///   - baseURLString: The Gate/AI tenant URL as a string (e.g., "https://yourteam.in.gate-ai.net")
     ///   - bundleIdentifier: Your app's bundle identifier. Defaults to `Bundle.main.bundleIdentifier` if available.
     ///   - teamIdentifier: Your Apple Team ID. Must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
     ///   - logLevel: Logging verbosity level. Defaults to `.off`.

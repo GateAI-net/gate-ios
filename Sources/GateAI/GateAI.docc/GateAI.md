@@ -27,7 +27,7 @@ import GateAI
 
 // Configure the client
 let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
+    baseURLString: "https://yourteam.in.gate-ai.net",
     teamIdentifier: "ABCDE12345",  // Your Apple Team ID
     logLevel: .info
 )

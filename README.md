@@ -63,7 +63,7 @@ import GateAI
 
 // 1. Configure the client
 let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
+    baseURLString: "https://yourteam.in.gate-ai.net",
     teamIdentifier: "ABCDE12345",  // Your Apple Team ID
     logLevel: .info
 )
@@ -215,7 +215,7 @@ Enable logging to debug issues:
 
 ```swift
 let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
+    baseURLString: "https://yourteam.in.gate-ai.net",
     teamIdentifier: "ABCDE12345",
     logLevel: .debug  // .off, .error, .warning, .info, .debug
 )
@@ -250,8 +250,8 @@ Your team ID must be the 10-character Apple Team ID, not your team name. Find it
 ### "Invalid base URL"
 
 Ensure the URL string is valid and includes the protocol:
-- ✅ `https://yourteam.us01.gate-ai.net`
-- ❌ `yourteam.us01.gate-ai.net` (missing protocol)
+- ✅ `https://yourteam.in.gate-ai.net`
+- ❌ `yourteam.in.gate-ai.net` (missing protocol)
 
 ## Contributing
 

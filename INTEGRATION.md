@@ -7,7 +7,7 @@ This document covers the end-to-end steps for embedding the GateAI authenticatio
 - iOS 15+ deployment target.
 - Apple Developer account with App Attest entitlement enabled for the app’s bundle identifier.
 - Real iOS device for testing (App Attest is unavailable in the simulator unless you follow the workaround in `Proxy/AUTH-Simulators.md`).
-- Access to your Gate/AI tenant domain (e.g. `yourteam.us01.gate-ai.net`) and the matching Apple Team ID + bundle identifier registered with Gate/AI.
+- Access to your Gate/AI tenant domain (e.g. `yourteam.in.gate-ai.net`) and the matching Apple Team ID + bundle identifier registered with Gate/AI.
 
 ## 2. Add the library as a local Swift Package
 Until the package is published, you will reference it locally:
@@ -39,7 +39,7 @@ import GateAI
 
 do {
     let configuration = try GateAIConfiguration(
-        baseURLString: "https://yourteam.us01.gate-ai.net",
+        baseURLString: "https://yourteam.in.gate-ai.net",
         teamIdentifier: "ABCDE12345",
         logLevel: .info
     )
@@ -55,7 +55,6 @@ do {
 - The initializers validate inputs and throw `GateAIError.configuration` if validation fails.
 - The `teamIdentifier` must be exactly 10 alphanumeric characters (e.g., "ABCDE12345").
 - The convenience initializer automatically uses `Bundle.main.bundleIdentifier` if not explicitly provided.
-- Provide the production base URL for real traffic. For staging, append `-staging` to the subdomain once it's available (e.g. `yourteam-staging.us01.gate-ai.net`).
 - If the bundle ID or Team ID differs between QA and production apps, create per-environment configurations.
 - Set `GATE_AI_DEV_TOKEN` in your scheme/CI for simulator runs; the SDK picks it up automatically and ignores it for device builds, so tokens never ship in release binaries.
 
@@ -131,10 +130,10 @@ App Attest is unavailable on simulator hardware. The SDK automatically looks for
 - Detects simulator builds via `targetEnvironment(simulator)` and calls `/token` with the env-provided token while preserving DPoP + device-key protections.
 - Ignores the token on real devices—App Attest remains mandatory on hardware.
 
-Store Dev Tokens outside of source control (environment variables, CI secrets, or encrypted config files). Rotate or revoke them frequently and keep them scoped to staging-only tenants.
+Store Dev Tokens outside of source control (environment variables, CI secrets, or encrypted config files). Rotate or revoke them frequently and keep them scoped to development tenants.
 
 **Quick simulator checklist**
-- ✅ Obtain a Dev Token from the Gate/AI Console (staging only).
+- ✅ Obtain a Dev Token from the Gate/AI Console.
 - ✅ Set `GATE_AI_DEV_TOKEN` in your Xcode scheme or CI environment.
 - ✅ Build/run the app in the simulator; verify `/token` responses include `"mode": "dev"`.
 - ✅ Confirm device builds omit the dev token so App Attest is always used.
