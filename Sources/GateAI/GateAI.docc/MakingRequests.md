@@ -50,7 +50,7 @@ let headers = try await client.authorizationHeaders(
 )
 
 // Construct your request
-var request = URLRequest(url: URL(string: "https://yourteam.us01.gate-ai.net/openai/chat/completions")!)
+var request = URLRequest(url: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!)
 request.httpMethod = "POST"
 request.httpBody = requestBody
 
@@ -236,7 +236,7 @@ Enable debug logging to see full request/response details:
 
 ```swift
 let configuration = try GateAIConfiguration(
-    baseURLString: "https://yourteam.us01.gate-ai.net",
+    baseURLString: "https://yourteam.in.gate-ai.net",
     teamIdentifier: "ABCDE12345",
     logLevel: .debug  // Enable detailed logging
 )

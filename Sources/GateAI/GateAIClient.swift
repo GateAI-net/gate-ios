@@ -18,7 +18,7 @@ import Foundation
 /// ```swift
 /// // Initialize the client
 /// let configuration = try GateAIConfiguration(
-///     baseURLString: "https://yourteam.us01.gate-ai.net",
+///     baseURLString: "https://yourteam.in.gate-ai.net",
 ///     teamIdentifier: "ABCDE12345"
 /// )
 /// let client = GateAIClient(configuration: configuration)
@@ -153,7 +153,7 @@ public final class GateAIClient: @unchecked Sendable {
     ///
     /// ```swift
     /// let headers = try await client.authorizationHeaders(
-    ///     for: URL(string: "https://yourteam.us01.gate-ai.net/openai/chat/completions")!,
+    ///     for: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!,
     ///     method: .post
     /// )
     /// var request = URLRequest(url: url)
@@ -312,7 +312,7 @@ public final class GateAIClient: @unchecked Sendable {
     /// ```swift
     /// let requestBody = try JSONEncoder().encode(myRequest)
     /// let (data, response) = try await client.performProxyRequest(
-    ///     to: URL(string: "https://yourteam.us01.gate-ai.net/openai/chat/completions")!,
+    ///     to: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!,
     ///     method: .post,
     ///     body: requestBody,
     ///     additionalHeaders: ["Content-Type": "application/json"]
