@@ -10,6 +10,12 @@ struct AnalyticsHeaders {
     /// The user status set by the application (e.g., "free", "premium", "trial").
     let userStatus: String?
 
+    /// The opaque user identifier set by the application (e.g., an account ID). Never PII.
+    let userIdentifier: String?
+
+    /// The app feature tag set by the application (e.g., "chat", "summarize").
+    let appFeature: String?
+
     /// Generates a dictionary of analytics headers.
     ///
     /// - Returns: A dictionary with X-prefixed analytics headers.
@@ -45,6 +51,27 @@ struct AnalyticsHeaders {
         if let deviceType = await Self.deviceType() {
             headers["X-Device-Type"] = deviceType
         }
+
+        // X-User-Identifier: Opaque user/account ID provided by developer
+        if let userIdentifier = userIdentifier {
+            headers["X-User-Identifier"] = userIdentifier
+        }
+
+        // X-App-Feature: Feature tag provided by developer (e.g., "chat", "summarize")
+        if let appFeature = appFeature {
+            headers["X-App-Feature"] = appFeature
+        }
+
+        // X-Environment: Build environment ("development", "testflight", "production")
+        headers["X-Environment"] = Self.environment()
+
+        // X-Device-Model: Hardware model identifier (e.g., "iPhone16,1")
+        if let deviceModel = Self.deviceModel() {
+            headers["X-Device-Model"] = deviceModel
+        }
+
+        // X-SDK-Version: Gate/AI SDK version (e.g., "1.1.0")
+        headers["X-SDK-Version"] = GateAIVersion.current
 
         return headers
     }
@@ -83,5 +110,33 @@ struct AnalyticsHeaders {
         #else
         return "macOS"
         #endif
+    }
+
+    private static func environment() -> String {
+        #if DEBUG
+        return "development"
+        #else
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            return "testflight"
+        }
+        return "production"
+        #endif
+    }
+
+    private static func deviceModel() -> String? {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machine = withUnsafeBytes(of: &systemInfo.machine) { buffer -> String in
+            let data = Data(buffer)
+            return String(decoding: data.prefix(while: { $0 != 0 }), as: UTF8.self)
+        }
+
+        // On the simulator, utsname reports the host architecture; prefer the simulated model.
+        if machine == "x86_64" || machine == "arm64",
+           let simulatorModel = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
+            return simulatorModel
+        }
+
+        return machine.isEmpty ? nil : machine
     }
 }
