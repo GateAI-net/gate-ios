@@ -158,6 +158,34 @@ do {
 }
 ```
 
+## Analytics Headers
+
+The SDK attaches analytics headers to every authenticated request. Most are collected automatically; three are optional values you set on the client.
+
+| Header | Source | Description |
+|---|---|---|
+| `X-Client-Locale` | Automatic | Language and country code (e.g., `en-US`) |
+| `X-App-Version` | Automatic | App version from the bundle (e.g., `1.0.2`) |
+| `X-OS-Version` | Automatic | OS version (e.g., `17.2`) |
+| `X-Device-Identifier` | Automatic | Vendor identifier (UUID string) |
+| `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
+| `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
+| `X-Environment` | Automatic | `development`, `testflight`, or `production` |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
+| `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
+| `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
+| `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
+
+```swift
+client.userStatus = "premium"
+client.userIdentifier = "user_8f2c1a"
+client.appFeature = "chat"
+```
+
+Developer-set headers are omitted when the corresponding property is `nil`. `X-App-Feature` can also be overridden per request by passing an `X-App-Feature` value in `additionalHeaders`.
+
+> **Privacy note:** `userIdentifier` must be an opaque ID from your own system — never an email address, user name, or other personally identifiable information.
+
 ## Setup Requirements
 
 ### 1. Enable App Attest

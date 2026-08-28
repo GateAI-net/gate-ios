@@ -53,6 +53,8 @@ import Foundation
 /// ### Analytics
 ///
 /// - ``userStatus``
+/// - ``userIdentifier``
+/// - ``appFeature``
 ///
 /// ### Managing State
 ///
@@ -83,6 +85,36 @@ public final class GateAIClient: @unchecked Sendable {
     /// client.userStatus = "free-trial"
     /// ```
     public var userStatus: String?
+
+    /// Optional opaque user identifier for analytics (e.g., an account ID from your own system).
+    ///
+    /// This value is included in the `X-User-Identifier` header on all authenticated requests.
+    /// Set this property to attribute usage and costs to individual users in your analytics.
+    /// Use an opaque identifier — never an email address, name, or other PII.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.userIdentifier = "user_8f2c1a"
+    /// // On logout
+    /// client.userIdentifier = nil
+    /// ```
+    public var userIdentifier: String?
+
+    /// Optional app feature tag for analytics (e.g., "chat", "summarize", "onboarding").
+    ///
+    /// This value is included in the `X-App-Feature` header on all authenticated requests.
+    /// Set this property to attribute usage and costs to specific features in your analytics.
+    /// You can also override it per request by passing an `X-App-Feature` value in `additionalHeaders`.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.appFeature = "chat"
+    /// // or
+    /// client.appFeature = "summarize"
+    /// ```
+    public var appFeature: String?
 
     /// Creates a new Gate/AI client with the specified configuration.
     ///
@@ -169,7 +201,11 @@ public final class GateAIClient: @unchecked Sendable {
         ]
 
         // Add analytics headers
-        let analyticsHeaders = AnalyticsHeaders(userStatus: userStatus)
+        let analyticsHeaders = AnalyticsHeaders(
+            userStatus: userStatus,
+            userIdentifier: userIdentifier,
+            appFeature: appFeature
+        )
         let analyticsValues = await analyticsHeaders.headers()
         headers.merge(analyticsValues) { current, _ in current }
 
@@ -404,8 +440,10 @@ public final class GateAIClient: @unchecked Sendable {
             request.setValue(value, forHTTPHeaderField: header)
         }
 
+        // Skip headers already provided via additionalHeaders so per-request values
+        // (e.g. "X-App-Feature") take precedence over the client-level analytics defaults.
         let authHeaders = try await authorizationHeaders(for: url, method: method, nonce: nonce)
-        for (header, value) in authHeaders {
+        for (header, value) in authHeaders where request.value(forHTTPHeaderField: header) == nil {
             request.setValue(value, forHTTPHeaderField: header)
         }
 

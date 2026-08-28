@@ -94,6 +94,26 @@ The library automatically:
 - Caches the short-lived access token in-memory and refreshes ~60s before expiry.
 - Handles `401` responses that include `DPoP-Nonce` by issuing a fresh proof once.
 
+### Analytics headers
+
+The returned headers also include analytics values that Gate/AI records for each request:
+
+| Header | Source | Description |
+|---|---|---|
+| `X-Client-Locale` | Automatic | Language and country code (e.g., `en-US`) |
+| `X-App-Version` | Automatic | App version from the bundle (e.g., `1.0.2`) |
+| `X-OS-Version` | Automatic | OS version (e.g., `17.2`) |
+| `X-Device-Identifier` | Automatic | Vendor identifier (UUID string) |
+| `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
+| `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
+| `X-Environment` | Automatic | `development`, `testflight`, or `production` |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
+| `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
+| `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
+| `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
+
+Developer-set headers are only sent when the corresponding client property is non-`nil`. `X-App-Feature` can be overridden per request via `additionalHeaders` on `performProxyRequest`. The user identifier must be an opaque ID from your own system — never an email address or name.
+
 ## 6. Handling nonce and error responses
 If you bypass `performProxyRequest` and make requests directly:
 

@@ -179,3 +179,36 @@ import Testing
     )
     #expect(config.logLevel == .debug)
 }
+
+// MARK: - AnalyticsHeaders Tests
+
+@Test func analyticsHeadersIncludeAutomaticHeaders() async throws {
+    let analytics = AnalyticsHeaders(userStatus: nil, userIdentifier: nil, appFeature: nil)
+    let headers = await analytics.headers()
+
+    #expect(headers["X-SDK-Version"] == GateAIVersion.current)
+    #expect(["development", "testflight", "production"].contains(headers["X-Environment"]))
+    #expect(headers["X-Device-Model"]?.isEmpty == false)
+}
+
+@Test func analyticsHeadersOmitDeveloperHeadersWhenUnset() async throws {
+    let analytics = AnalyticsHeaders(userStatus: nil, userIdentifier: nil, appFeature: nil)
+    let headers = await analytics.headers()
+
+    #expect(headers["X-User-Status"] == nil)
+    #expect(headers["X-User-Identifier"] == nil)
+    #expect(headers["X-App-Feature"] == nil)
+}
+
+@Test func analyticsHeadersIncludeDeveloperHeadersWhenSet() async throws {
+    let analytics = AnalyticsHeaders(
+        userStatus: "premium",
+        userIdentifier: "user_8f2c1a",
+        appFeature: "chat"
+    )
+    let headers = await analytics.headers()
+
+    #expect(headers["X-User-Status"] == "premium")
+    #expect(headers["X-User-Identifier"] == "user_8f2c1a")
+    #expect(headers["X-App-Feature"] == "chat")
+}
