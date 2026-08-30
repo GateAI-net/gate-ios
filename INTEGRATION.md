@@ -142,7 +142,7 @@ If your gate enforces per-device usage limits:
 
 - Per-tier usage limits configured in the Portal key off `gateAIClient.userTier` (e.g., `client.userTier = "pro"`). The Portal-configured tier names match the value exactly (case-sensitive).
 - Set `gateAIClient.quotaAnchorDay` to the day-of-month the user's subscription renews (1–31) to anchor `cycle` windows to the billing cycle. It is sent as `X-Quota-Anchor-Day` and stripped before the request reaches the AI provider; out-of-range values are dropped with a one-time warning.
-- Read remaining capacity from successful responses via `response.gateAIQuotaStatus` (`requestsRemaining`, `tokensRemaining`, `resetsAt`).
+- Read remaining capacity from successful responses via `response.gateAIQuotaStatus` (`requestsRemaining`, `tokensRemaining`, `requestsResetAt`, `tokensResetAt` — parsed from the `X-Quota-Requests-Remaining`, `X-Quota-Tokens-Remaining`, `X-Quota-Requests-Reset`, and `X-Quota-Tokens-Reset` headers).
 - On a 429, parse the structured body with `GateAIRateLimitInfo.parse(from: data)` (`code`, `message`, and — for device-window rejections — `window`, `limit`, `used`, `resetsAt`). Thrown `GateAIError.server` 429s expose the same details via `error.rateLimitInfo`.
 
 ```swift

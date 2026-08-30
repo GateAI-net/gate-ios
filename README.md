@@ -215,6 +215,13 @@ The value is sent as the `X-Quota-Anchor-Day` header on all authenticated reques
 
 When device usage windows are configured, successful proxied responses include `X-Quota-*` headers. Read them via `gateAIQuotaStatus`:
 
+| Header | Description |
+|---|---|
+| `X-Quota-Requests-Remaining` | Remaining requests (integer) |
+| `X-Quota-Tokens-Remaining` | Remaining tokens (integer) |
+| `X-Quota-Requests-Reset` | When the binding window for requests resets (ISO8601) |
+| `X-Quota-Tokens-Reset` | When the binding window for tokens resets (ISO8601) |
+
 ```swift
 let (data, response) = try await client.performProxyRequest(
     path: "openai/chat/completions",
@@ -225,7 +232,8 @@ let (data, response) = try await client.performProxyRequest(
 
 if let quota = response.gateAIQuotaStatus {
     print("\(quota.requestsRemaining ?? 0) requests left")
-    // quota.tokensRemaining and quota.resetsAt (reset of the tightest window) are also available
+    // quota.tokensRemaining, quota.requestsResetAt, and quota.tokensResetAt
+    // (each metric's binding-window reset) are also available
 }
 ```
 

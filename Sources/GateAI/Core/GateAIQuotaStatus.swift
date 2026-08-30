@@ -7,7 +7,8 @@ import Foundation
 ///
 /// - `X-Quota-Requests-Remaining`: Remaining requests (integer)
 /// - `X-Quota-Tokens-Remaining`: Remaining tokens (integer)
-/// - `X-Quota-Reset`: When the tightest window resets (ISO8601)
+/// - `X-Quota-Requests-Reset`: When the binding window for requests resets (ISO8601)
+/// - `X-Quota-Tokens-Reset`: When the binding window for tokens resets (ISO8601)
 ///
 /// Use ``HTTPURLResponse/gateAIQuotaStatus`` to read the parsed status from a proxy response:
 ///
@@ -33,19 +34,24 @@ public struct GateAIQuotaStatus: Sendable, Equatable {
     /// The number of tokens remaining in the tightest configured window, if reported.
     public let tokensRemaining: Int?
 
-    /// When the tightest window resets and capacity returns, if reported.
-    public let resetsAt: Date?
+    /// When the binding window for requests resets and request capacity returns, if reported.
+    public let requestsResetAt: Date?
+
+    /// When the binding window for tokens resets and token capacity returns, if reported.
+    public let tokensResetAt: Date?
 
     /// Creates a quota status with the given values.
     ///
     /// - Parameters:
     ///   - requestsRemaining: Remaining requests, or `nil`.
     ///   - tokensRemaining: Remaining tokens, or `nil`.
-    ///   - resetsAt: When the tightest window resets, or `nil`.
-    public init(requestsRemaining: Int?, tokensRemaining: Int?, resetsAt: Date?) {
+    ///   - requestsResetAt: When the binding window for requests resets, or `nil`.
+    ///   - tokensResetAt: When the binding window for tokens resets, or `nil`.
+    public init(requestsRemaining: Int?, tokensRemaining: Int?, requestsResetAt: Date?, tokensResetAt: Date?) {
         self.requestsRemaining = requestsRemaining
         self.tokensRemaining = tokensRemaining
-        self.resetsAt = resetsAt
+        self.requestsResetAt = requestsResetAt
+        self.tokensResetAt = tokensResetAt
     }
 
     /// Parses a quota status from a dictionary of response header fields.
@@ -57,15 +63,17 @@ public struct GateAIQuotaStatus: Sendable, Equatable {
     public init?(headers: [String: String]) {
         let requestsRaw = headers[caseInsensitive: "X-Quota-Requests-Remaining"]
         let tokensRaw = headers[caseInsensitive: "X-Quota-Tokens-Remaining"]
-        let resetRaw = headers[caseInsensitive: "X-Quota-Reset"]
+        let requestsResetRaw = headers[caseInsensitive: "X-Quota-Requests-Reset"]
+        let tokensResetRaw = headers[caseInsensitive: "X-Quota-Tokens-Reset"]
 
-        guard requestsRaw != nil || tokensRaw != nil || resetRaw != nil else {
+        guard requestsRaw != nil || tokensRaw != nil || requestsResetRaw != nil || tokensResetRaw != nil else {
             return nil
         }
 
         self.requestsRemaining = requestsRaw.flatMap { Int($0) }
         self.tokensRemaining = tokensRaw.flatMap { Int($0) }
-        self.resetsAt = resetRaw.flatMap { ISO8601DateParsing.date(from: $0) }
+        self.requestsResetAt = requestsResetRaw.flatMap { ISO8601DateParsing.date(from: $0) }
+        self.tokensResetAt = tokensResetRaw.flatMap { ISO8601DateParsing.date(from: $0) }
     }
 
     /// Parses a quota status from an HTTP response.
@@ -87,8 +95,9 @@ public struct GateAIQuotaStatus: Sendable, Equatable {
 extension HTTPURLResponse {
     /// The device usage quota reported by the Gate/AI proxy, if present.
     ///
-    /// Parses the `X-Quota-Requests-Remaining`, `X-Quota-Tokens-Remaining`, and
-    /// `X-Quota-Reset` headers (case-insensitively). Returns `nil` when the response
+    /// Parses the `X-Quota-Requests-Remaining`, `X-Quota-Tokens-Remaining`,
+    /// `X-Quota-Requests-Reset`, and `X-Quota-Tokens-Reset` headers (case-insensitively).
+    /// Returns `nil` when the response
     /// carries none of them — for example when the gate has no device usage windows configured.
     public var gateAIQuotaStatus: GateAIQuotaStatus? {
         GateAIQuotaStatus(response: self)

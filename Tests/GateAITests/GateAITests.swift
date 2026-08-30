@@ -260,31 +260,47 @@ import Testing
     let status = GateAIQuotaStatus(headers: [
         "X-Quota-Requests-Remaining": "42",
         "X-Quota-Tokens-Remaining": "10000",
-        "X-Quota-Reset": "2026-09-01T00:00:00.000Z"
+        "X-Quota-Requests-Reset": "2026-09-01T00:00:00.000Z",
+        "X-Quota-Tokens-Reset": "2026-09-02T00:00:00.000Z"
     ])
 
     let unwrapped = try #require(status)
     #expect(unwrapped.requestsRemaining == 42)
     #expect(unwrapped.tokensRemaining == 10000)
-    #expect(unwrapped.resetsAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(unwrapped.requestsResetAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(unwrapped.tokensResetAt == Date(timeIntervalSince1970: 1_788_307_200))
 }
 
 @Test func quotaStatusParsesHeadersCaseInsensitively() throws {
     let status = GateAIQuotaStatus(headers: [
         "x-quota-requests-remaining": "5",
         "X-QUOTA-TOKENS-REMAINING": "250",
-        "x-Quota-Reset": "2026-09-01T00:00:00Z"
+        "x-Quota-Requests-Reset": "2026-09-01T00:00:00Z",
+        "X-QUOTA-TOKENS-RESET": "2026-09-02T00:00:00Z"
     ])
 
     let unwrapped = try #require(status)
     #expect(unwrapped.requestsRemaining == 5)
     #expect(unwrapped.tokensRemaining == 250)
-    #expect(unwrapped.resetsAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(unwrapped.requestsResetAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(unwrapped.tokensResetAt == Date(timeIntervalSince1970: 1_788_307_200))
 }
 
 @Test func quotaStatusIsNilWhenNoQuotaHeadersPresent() throws {
     let status = GateAIQuotaStatus(headers: ["Content-Type": "application/json"])
     #expect(status == nil)
+}
+
+@Test func quotaStatusParsesWithSingleResetHeaderAlone() throws {
+    let status = GateAIQuotaStatus(headers: [
+        "X-Quota-Tokens-Reset": "2026-09-01T00:00:00.000Z"
+    ])
+
+    let unwrapped = try #require(status)
+    #expect(unwrapped.requestsRemaining == nil)
+    #expect(unwrapped.tokensRemaining == nil)
+    #expect(unwrapped.requestsResetAt == nil)
+    #expect(unwrapped.tokensResetAt == Date(timeIntervalSince1970: 1_788_220_800))
 }
 
 @Test func quotaStatusExposedOnHTTPURLResponse() throws {
@@ -294,14 +310,15 @@ import Testing
         httpVersion: "HTTP/1.1",
         headerFields: [
             "X-Quota-Requests-Remaining": "7",
-            "X-Quota-Reset": "2026-09-01T00:00:00.000Z"
+            "X-Quota-Requests-Reset": "2026-09-01T00:00:00.000Z"
         ]
     ))
 
     let status = try #require(response.gateAIQuotaStatus)
     #expect(status.requestsRemaining == 7)
     #expect(status.tokensRemaining == nil)
-    #expect(status.resetsAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(status.requestsResetAt == Date(timeIntervalSince1970: 1_788_220_800))
+    #expect(status.tokensResetAt == nil)
 }
 
 // MARK: - GateAIRateLimitInfo Tests
