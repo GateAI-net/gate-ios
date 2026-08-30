@@ -105,9 +105,10 @@ final class GateAIHTTPClient: @unchecked Sendable {
                 do {
                     return try decoder.decode(ResponseBody.self, from: data)
                 } catch {
-                    let responseString = String(data: data, encoding: .utf8) ?? "<unable to decode data as UTF-8>"
-                    logger.error("Failed to decode response as \(ResponseBody.self): \(error)")
-                    logger.error("Raw response data: \(responseString)")
+                    // Do not log the raw body here: on a 2xx /token response it contains the
+                    // access token, and error-level logs are public in the unified log. The
+                    // body was already logged (redacted, at debug) by logResponse above.
+                    logger.error("Failed to decode response as \(ResponseBody.self) (\(data.count) bytes): \(error)")
                     throw GateAIError.decoding(underlying: error)
                 }
             default:
