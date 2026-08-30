@@ -160,7 +160,7 @@ do {
 
 ## Analytics Headers
 
-The SDK attaches analytics headers to every authenticated request. Most are collected automatically; three are optional values you set on the client.
+The SDK attaches analytics headers to every authenticated request. Most are collected automatically; four are optional values you set on the client.
 
 | Header | Source | Description |
 |---|---|---|
@@ -172,13 +172,15 @@ The SDK attaches analytics headers to every authenticated request. Most are coll
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
 | `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
-| `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
+| `X-User-Status` | Developer-set | `client.userStatus` — free-form user segment for analytics (e.g., `premium`, `free-trial`) |
+| `X-User-Tier` | Developer-set | `client.userTier` — plan tier for per-tier usage limits (e.g., `free`, `pro`); see [Usage Limits & Quotas](#usage-limits--quotas) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
 | `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
 | `X-Quota-Anchor-Day` | Developer-set | `client.quotaAnchorDay` — billing-cycle anchor day (1–31); see [Usage Limits & Quotas](#usage-limits--quotas) |
 
 ```swift
 client.userStatus = "premium"
+client.userTier = "pro"
 client.userIdentifier = "user_8f2c1a"
 client.appFeature = "chat"
 ```
@@ -189,7 +191,15 @@ Developer-set headers are omitted when the corresponding property is `nil`. `X-A
 
 ## Usage Limits & Quotas
 
-Gates can enforce per-device usage limits over daily, monthly, rolling 30-day, or billing-cycle windows. The SDK surfaces three pieces of this feature.
+Gates can enforce per-device usage limits over daily, monthly, rolling 30-day, or billing-cycle windows. The SDK surfaces four pieces of this feature.
+
+### Key limits to the user's plan tier
+
+Per-tier usage limits configured in the Portal key off `client.userTier`. The tier names configured there match the value exactly (case-sensitive):
+
+```swift
+client.userTier = "pro"
+```
 
 ### Anchor windows to the user's billing cycle
 
