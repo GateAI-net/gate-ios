@@ -26,6 +26,15 @@ public struct GateAIConfiguration: Sendable {
             throw GateAIError.configuration("bundleIdentifier cannot be empty.")
         }
 
+        // Enforce TLS: bearer tokens and DPoP proofs must never travel in cleartext.
+        // Allow plain http only for localhost, to support local proxy development.
+        let scheme = baseURL.scheme?.lowercased()
+        let host = baseURL.host?.lowercased()
+        let isLocalHTTP = scheme == "http" && (host == "localhost" || host == "127.0.0.1")
+        guard scheme == "https" || isLocalHTTP else {
+            throw GateAIError.configuration("baseURL must use https. Provided scheme: '\(baseURL.scheme ?? "none")'.")
+        }
+
         self.baseURL = baseURL
         self.bundleIdentifier = bundleIdentifier
         self.teamIdentifier = teamIdentifier

@@ -170,7 +170,9 @@ public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
             // Use os_log for system integration
             switch level {
             case .debug:
-                os_log("%{public}@", log: self.osLog, type: .debug, formattedMessage)
+                // Debug messages can carry request/response payloads; mark them private so
+                // they are not persisted in the clear in the unified log / sysdiagnose.
+                os_log("%{private}@", log: self.osLog, type: .debug, formattedMessage)
             case .info:
                 os_log("%{public}@", log: self.osLog, type: .info, formattedMessage)
             case .warning:
@@ -205,7 +207,7 @@ public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
 
         if let body = body {
             if let bodyString = String(data: body, encoding: .utf8) {
-                logMessage += "Body: \(bodyString)"
+                logMessage += "Body: \(redactSensitiveBody(bodyString))"
             } else {
                 logMessage += "Body: <\(body.count) bytes of binary data>"
             }
@@ -252,9 +254,9 @@ public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
                    let jsonObject = try? JSONSerialization.jsonObject(with: jsonData),
                    let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted),
                    let prettyString = String(data: prettyData, encoding: .utf8) {
-                    logMessage += "Body:\n\(prettyString)"
+                    logMessage += "Body:\n\(redactSensitiveBody(prettyString))"
                 } else {
-                    logMessage += "Body: \(responseString)"
+                    logMessage += "Body: \(redactSensitiveBody(responseString))"
                 }
             } else {
                 logMessage += "Body: <\(data.count) bytes of binary data>"
@@ -274,6 +276,36 @@ public final class GateAILogger: GateAILoggerProtocol, @unchecked Sendable {
             "set-cookie"
         ]
         return sensitiveHeaders.contains(headerName.lowercased())
+    }
+
+    /// Redacts credential values from a request/response body before it is logged.
+    /// The `/token` request body carries `dev_token`, and its response carries
+    /// `access_token`; without this these secrets would land in the unified log.
+    private func redactSensitiveBody(_ body: String) -> String {
+        let sensitiveKeys = [
+            "dev_token",
+            "access_token",
+            "refresh_token",
+            "dpop",
+            "client_secret",
+            "assertion"
+        ]
+        var result = body
+        for key in sensitiveKeys {
+            // JSON: "key": "value"
+            result = result.replacingOccurrences(
+                of: "(\"\(key)\"\\s*:\\s*)\"[^\"]*\"",
+                with: "$1\"[REDACTED]\"",
+                options: [.regularExpression, .caseInsensitive]
+            )
+            // form-urlencoded: key=value
+            result = result.replacingOccurrences(
+                of: "(\(key)=)[^&\\s]*",
+                with: "$1[REDACTED]",
+                options: [.regularExpression, .caseInsensitive]
+            )
+        }
+        return result
     }
 }
 
