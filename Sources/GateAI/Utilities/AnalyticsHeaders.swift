@@ -16,6 +16,9 @@ struct AnalyticsHeaders {
     /// The app feature tag set by the application (e.g., "chat", "summarize").
     let appFeature: String?
 
+    /// The quota anchor day-of-month (1–31) set by the application. Values outside 1–31 are dropped.
+    var quotaAnchorDay: Int? = nil
+
     /// Generates a dictionary of analytics headers.
     ///
     /// - Returns: A dictionary with X-prefixed analytics headers.
@@ -60,6 +63,12 @@ struct AnalyticsHeaders {
         // X-App-Feature: Feature tag provided by developer (e.g., "chat", "summarize")
         if let appFeature = appFeature {
             headers["X-App-Feature"] = appFeature
+        }
+
+        // X-Quota-Anchor-Day: Billing-cycle anchor day provided by developer (1–31).
+        // Out-of-range values are dropped; the Proxy also ignores invalid values.
+        if let quotaAnchorDay = quotaAnchorDay, (1...31).contains(quotaAnchorDay) {
+            headers["X-Quota-Anchor-Day"] = String(quotaAnchorDay)
         }
 
         // X-Environment: Build environment ("development", "testflight", "production")

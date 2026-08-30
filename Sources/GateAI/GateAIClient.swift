@@ -56,6 +56,10 @@ import Foundation
 /// - ``userIdentifier``
 /// - ``appFeature``
 ///
+/// ### Usage Limits
+///
+/// - ``quotaAnchorDay``
+///
 /// ### Managing State
 ///
 /// - ``currentAccessToken()``
@@ -115,6 +119,35 @@ public final class GateAIClient: @unchecked Sendable {
     /// client.appFeature = "summarize"
     /// ```
     public var appFeature: String?
+
+    /// Optional day-of-month (1–31) anchoring device usage windows to the user's billing cycle.
+    ///
+    /// Set this to the day of the month the user's subscription renews, read from StoreKit,
+    /// RevenueCat, or your own billing system. The value is included in the `X-Quota-Anchor-Day`
+    /// header on all authenticated requests and enables the `cycle` device usage window when
+    /// your gate has one configured. Changing it later is safe — usage windows are computed
+    /// server-side at read time. The header is stripped before the request reaches the AI provider.
+    ///
+    /// Values outside 1–31 are not sent (the SDK logs a warning once and drops the header).
+    /// Days 29–31 are fine to send as-is — the server clamps to shorter months.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.quotaAnchorDay = 15  // subscription renews on the 15th
+    /// // On logout or when the anchor is unknown
+    /// client.quotaAnchorDay = nil
+    /// ```
+    public var quotaAnchorDay: Int? {
+        didSet {
+            if let day = quotaAnchorDay, !(1...31).contains(day), !didWarnAboutInvalidQuotaAnchorDay {
+                didWarnAboutInvalidQuotaAnchorDay = true
+                logger.warning("quotaAnchorDay \(day) is outside 1–31; the X-Quota-Anchor-Day header will not be sent.")
+            }
+        }
+    }
+
+    private var didWarnAboutInvalidQuotaAnchorDay = false
 
     /// Creates a new Gate/AI client with the specified configuration.
     ///
@@ -204,7 +237,8 @@ public final class GateAIClient: @unchecked Sendable {
         let analyticsHeaders = AnalyticsHeaders(
             userStatus: userStatus,
             userIdentifier: userIdentifier,
-            appFeature: appFeature
+            appFeature: appFeature,
+            quotaAnchorDay: quotaAnchorDay
         )
         let analyticsValues = await analyticsHeaders.headers()
         headers.merge(analyticsValues) { current, _ in current }

@@ -171,10 +171,11 @@ The SDK attaches analytics headers to every authenticated request. Most are coll
 | `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
-| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
 | `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
 | `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
+| `X-Quota-Anchor-Day` | Developer-set | `client.quotaAnchorDay` — billing-cycle anchor day (1–31); see [Usage Limits & Quotas](#usage-limits--quotas) |
 
 ```swift
 client.userStatus = "premium"
@@ -185,6 +186,57 @@ client.appFeature = "chat"
 Developer-set headers are omitted when the corresponding property is `nil`. `X-App-Feature` can also be overridden per request by passing an `X-App-Feature` value in `additionalHeaders`.
 
 > **Privacy note:** `userIdentifier` must be an opaque ID from your own system — never an email address, user name, or other personally identifiable information.
+
+## Usage Limits & Quotas
+
+Gates can enforce per-device usage limits over daily, monthly, rolling 30-day, or billing-cycle windows. The SDK surfaces three pieces of this feature.
+
+### Anchor windows to the user's billing cycle
+
+If your gate uses a `cycle` window, tell the SDK which day of the month the user's subscription renews (1–31), read from StoreKit, RevenueCat, or your own billing system:
+
+```swift
+client.quotaAnchorDay = 15  // subscription renews on the 15th
+```
+
+The value is sent as the `X-Quota-Anchor-Day` header on all authenticated requests and is stripped before the request reaches the AI provider. Values outside 1–31 are dropped (the SDK logs a warning once); days 29–31 are fine — the server clamps to shorter months. Changing it later is safe, since usage windows are computed server-side at read time.
+
+### Read the remaining quota
+
+When device usage windows are configured, successful proxied responses include `X-Quota-*` headers. Read them via `gateAIQuotaStatus`:
+
+```swift
+let (data, response) = try await client.performProxyRequest(
+    path: "openai/chat/completions",
+    method: .post,
+    body: requestBody,
+    additionalHeaders: ["Content-Type": "application/json"]
+)
+
+if let quota = response.gateAIQuotaStatus {
+    print("\(quota.requestsRemaining ?? 0) requests left")
+    // quota.tokensRemaining and quota.resetsAt (reset of the tightest window) are also available
+}
+```
+
+### Handle a structured 429
+
+When a request is rejected with HTTP 429, parse the structured body with `GateAIRateLimitInfo`:
+
+```swift
+if response.statusCode == 429, let info = GateAIRateLimitInfo.parse(from: data) {
+    switch info.window {
+    case .daily, .monthly, .rolling30d, .cycle:
+        // Device usage window exhausted — info.limit, info.used, and info.resetsAt are set
+        showLimitReached(info.message, resetsAt: info.resetsAt)
+    default:
+        // Non-window rejection (e.g. global_rpm_exceeded) — just back off
+        showTryAgainLater(info.message)
+    }
+}
+```
+
+Unknown future window values decode safely as `.unknown(rawValue)`. If you use code paths that throw `GateAIError` on non-2xx responses, the same details are available via `error.rateLimitInfo` on 429 errors.
 
 ## Setup Requirements
 

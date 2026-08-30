@@ -107,10 +107,11 @@ The returned headers also include analytics values that Gate/AI records for each
 | `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
-| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
 | `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
 | `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
+| `X-Quota-Anchor-Day` | Developer-set | `client.quotaAnchorDay` — billing-cycle anchor day (1–31) for device usage windows |
 
 Developer-set headers are only sent when the corresponding client property is non-`nil`. `X-App-Feature` can be overridden per request via `additionalHeaders` on `performProxyRequest`. The user identifier must be an opaque ID from your own system — never an email address or name.
 
@@ -134,6 +135,19 @@ let (data, response) = try await gateAIClient.performProxyRequest(
 ```
 
 This method automatically performs nonce retries and returns the raw `HTTPURLResponse` plus data for inspection.
+
+### Usage limits & quotas
+If your gate enforces per-device usage limits:
+
+- Set `gateAIClient.quotaAnchorDay` to the day-of-month the user's subscription renews (1–31) to anchor `cycle` windows to the billing cycle. It is sent as `X-Quota-Anchor-Day` and stripped before the request reaches the AI provider; out-of-range values are dropped with a one-time warning.
+- Read remaining capacity from successful responses via `response.gateAIQuotaStatus` (`requestsRemaining`, `tokensRemaining`, `resetsAt`).
+- On a 429, parse the structured body with `GateAIRateLimitInfo.parse(from: data)` (`code`, `message`, and — for device-window rejections — `window`, `limit`, `used`, `resetsAt`). Thrown `GateAIError.server` 429s expose the same details via `error.rateLimitInfo`.
+
+```swift
+if response.statusCode == 429, let info = GateAIRateLimitInfo.parse(from: data) {
+    print("Rate limited (\(info.code)) — resets at \(info.resetsAt?.description ?? "unknown")")
+}
+```
 
 ## 8. Persisting state (optional)
 - The device key lives in the Secure Enclave and is stored by tag; no additional persistence is required.
