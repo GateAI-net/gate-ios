@@ -10,6 +10,10 @@ struct AnalyticsHeaders {
     /// The user status set by the application (e.g., "free", "premium", "trial").
     let userStatus: String?
 
+    /// The user plan tier set by the application (e.g., "free", "pro"). Matched case-sensitively
+    /// against Portal-configured per-tier usage limits.
+    var userTier: String? = nil
+
     /// The opaque user identifier set by the application (e.g., an account ID). Never PII.
     let userIdentifier: String?
 
@@ -43,6 +47,11 @@ struct AnalyticsHeaders {
         // X-User-Status: Custom status provided by developer
         if let userStatus = userStatus {
             headers["X-User-Status"] = userStatus
+        }
+
+        // X-User-Tier: Plan tier provided by developer; enforcement key for per-tier usage limits
+        if let userTier = userTier {
+            headers["X-User-Tier"] = userTier
         }
 
         // X-Device-Identifier: Vendor identifier (UUID string)

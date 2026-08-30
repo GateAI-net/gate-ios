@@ -58,6 +58,7 @@ import Foundation
 ///
 /// ### Usage Limits
 ///
+/// - ``userTier``
 /// - ``quotaAnchorDay``
 ///
 /// ### Managing State
@@ -79,7 +80,8 @@ public final class GateAIClient: @unchecked Sendable {
     /// Optional user status for analytics (e.g., "free", "premium", "trial").
     ///
     /// This value is included in the `X-User-Status` header on all authenticated requests.
-    /// Set this property to track different user segments or subscription tiers in your analytics.
+    /// Set this property to track different user segments in your analytics.
+    /// For tier-based usage limit enforcement, use ``userTier`` instead.
     ///
     /// ## Example
     ///
@@ -89,6 +91,21 @@ public final class GateAIClient: @unchecked Sendable {
     /// client.userStatus = "free-trial"
     /// ```
     public var userStatus: String?
+
+    /// Optional user plan tier for per-tier usage limits (e.g., "free", "pro").
+    ///
+    /// This value is included in the `X-User-Tier` header on all authenticated requests.
+    /// Per-tier usage limits configured in the Portal match this value exactly (case-sensitive).
+    /// Use ``userStatus`` for free-form analytics segmentation instead.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.userTier = "pro"
+    /// // or
+    /// client.userTier = "free"
+    /// ```
+    public var userTier: String?
 
     /// Optional opaque user identifier for analytics (e.g., an account ID from your own system).
     ///
@@ -236,6 +253,7 @@ public final class GateAIClient: @unchecked Sendable {
         // Add analytics headers
         let analyticsHeaders = AnalyticsHeaders(
             userStatus: userStatus,
+            userTier: userTier,
             userIdentifier: userIdentifier,
             appFeature: appFeature,
             quotaAnchorDay: quotaAnchorDay

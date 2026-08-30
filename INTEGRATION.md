@@ -108,7 +108,8 @@ The returned headers also include analytics values that Gate/AI records for each
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
 | `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
-| `X-User-Status` | Developer-set | `client.userStatus` — user segment or tier (e.g., `free`, `premium`) |
+| `X-User-Status` | Developer-set | `client.userStatus` — free-form user segment for analytics (e.g., `premium`, `free-trial`) |
+| `X-User-Tier` | Developer-set | `client.userTier` — plan tier for per-tier usage limits (e.g., `free`, `pro`); matched exactly (case-sensitive) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
 | `X-App-Feature` | Developer-set | `client.appFeature` — feature tag for cost attribution (e.g., `chat`) |
 | `X-Quota-Anchor-Day` | Developer-set | `client.quotaAnchorDay` — billing-cycle anchor day (1–31) for device usage windows |
@@ -139,6 +140,7 @@ This method automatically performs nonce retries and returns the raw `HTTPURLRes
 ### Usage limits & quotas
 If your gate enforces per-device usage limits:
 
+- Per-tier usage limits configured in the Portal key off `gateAIClient.userTier` (e.g., `client.userTier = "pro"`). The Portal-configured tier names match the value exactly (case-sensitive).
 - Set `gateAIClient.quotaAnchorDay` to the day-of-month the user's subscription renews (1–31) to anchor `cycle` windows to the billing cycle. It is sent as `X-Quota-Anchor-Day` and stripped before the request reaches the AI provider; out-of-range values are dropped with a one-time warning.
 - Read remaining capacity from successful responses via `response.gateAIQuotaStatus` (`requestsRemaining`, `tokensRemaining`, `resetsAt`).
 - On a 429, parse the structured body with `GateAIRateLimitInfo.parse(from: data)` (`code`, `message`, and — for device-window rejections — `window`, `limit`, `used`, `resetsAt`). Thrown `GateAIError.server` 429s expose the same details via `error.rateLimitInfo`.
