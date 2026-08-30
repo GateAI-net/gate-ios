@@ -271,6 +271,30 @@ import Testing
     #expect(unwrapped.tokensResetAt == Date(timeIntervalSince1970: 1_788_307_200))
 }
 
+@Test func quotaStatusParsesLimitsAndComputesProgress() throws {
+    let status = GateAIQuotaStatus(headers: [
+        "X-Quota-Requests-Remaining": "1",
+        "X-Quota-Requests-Limit": "4",
+        "X-Quota-Tokens-Remaining": "750",
+        "X-Quota-Tokens-Limit": "1000"
+    ])
+
+    let unwrapped = try #require(status)
+    #expect(unwrapped.requestsLimit == 4)
+    #expect(unwrapped.requestsUsed == 3)
+    #expect(unwrapped.requestsUsedFraction == 0.75)
+    #expect(unwrapped.tokensLimit == 1000)
+    #expect(unwrapped.tokensUsed == 250)
+    #expect(unwrapped.tokensUsedFraction == 0.25)
+}
+
+@Test func quotaStatusProgressIsNilWithoutLimits() throws {
+    let status = GateAIQuotaStatus(headers: ["X-Quota-Requests-Remaining": "5"])
+    let unwrapped = try #require(status)
+    #expect(unwrapped.requestsUsed == nil)
+    #expect(unwrapped.requestsUsedFraction == nil)
+}
+
 @Test func quotaStatusParsesHeadersCaseInsensitively() throws {
     let status = GateAIQuotaStatus(headers: [
         "x-quota-requests-remaining": "5",
