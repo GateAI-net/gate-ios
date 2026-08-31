@@ -25,6 +25,7 @@ public struct GateAIConfiguration: Sendable {
         guard !bundleIdentifier.isEmpty else {
             throw GateAIError.configuration("bundleIdentifier cannot be empty.")
         }
+        try Self.validateTeamIdentifier(teamIdentifier)
 
         // Enforce TLS: bearer tokens and DPoP proofs must never travel in cleartext.
         // Allow plain http only for localhost, to support local proxy development.
