@@ -28,6 +28,15 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
 - Tests for quota header parsing, 429 body parsing, anchor-day validation, analytics
   headers, and ISO 8601 date parsing.
 
+### Security
+- Logged request and response bodies redact `dev_token`, `access_token`, `refresh_token`,
+  `dpop`, and `client_secret`, and debug payloads use `%{private}@` so they are not persisted
+  in the clear by the unified log / sysdiagnose.
+- A 2xx decode failure now logs only the error and byte count, not the raw body (which on
+  `/token` contained the access token).
+- `GateAIConfiguration` requires an `https` base URL (`http` is allowed only for localhost)
+  so bearer tokens and DPoP proofs are never sent in cleartext.
+
 ### Fixed
 - `GateAIConfiguration` validates `teamIdentifier` again (exactly 10 alphanumeric
   characters). The check had been dropped when development tokens moved to the
