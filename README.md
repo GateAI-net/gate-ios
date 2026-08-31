@@ -37,7 +37,7 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/GateAI-net/gate-ios.git", from: "1.2.0")
+    .package(url: "https://github.com/GateAI-net/gate-ios.git", from: "1.1.0")
 ]
 ```
 
@@ -171,7 +171,7 @@ The SDK attaches analytics headers to every authenticated request. Most are coll
 | `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
-| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
 | `X-User-Status` | Developer-set | `client.userStatus` — free-form user segment for analytics (e.g., `premium`, `free-trial`) |
 | `X-User-Tier` | Developer-set | `client.userTier` — plan tier for per-tier usage limits (e.g., `free`, `pro`); see [Usage Limits & Quotas](#usage-limits--quotas) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |

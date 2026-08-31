@@ -4,7 +4,7 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-08-31
+## [1.1.0] - 2026-08-31
 
 ### Added
 - **Usage limits & quotas.** `client.quotaAnchorDay` (1–31, validated with a one-time
@@ -49,5 +49,5 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
   never authenticate. New App Attest keys are now attested proactively instead of probed
   with `generateAssertion`.
 
-[1.2.0]: https://github.com/GateAI-net/gate-ios/releases/tag/1.2.0
+[1.1.0]: https://github.com/GateAI-net/gate-ios/releases/tag/1.1.0
 [1.0.5]: https://github.com/GateAI-net/gate-ios/releases/tag/1.0.5

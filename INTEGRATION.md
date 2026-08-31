@@ -107,7 +107,7 @@ The returned headers also include analytics values that Gate/AI records for each
 | `X-Device-Type` | Automatic | Device family (e.g., `iPhone`, `iPad`) |
 | `X-Device-Model` | Automatic | Hardware model identifier (e.g., `iPhone16,1`) |
 | `X-Environment` | Automatic | `development`, `testflight`, or `production` |
-| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.2.0`) |
+| `X-SDK-Version` | Automatic | Gate/AI SDK version (e.g., `1.1.0`) |
 | `X-User-Status` | Developer-set | `client.userStatus` — free-form user segment for analytics (e.g., `premium`, `free-trial`) |
 | `X-User-Tier` | Developer-set | `client.userTier` — plan tier for per-tier usage limits (e.g., `free`, `pro`); matched exactly (case-sensitive) |
 | `X-User-Identifier` | Developer-set | `client.userIdentifier` — opaque user/account ID from your system |
