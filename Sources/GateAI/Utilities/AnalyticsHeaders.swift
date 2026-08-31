@@ -10,11 +10,18 @@ struct AnalyticsHeaders {
     /// The user status set by the application (e.g., "free", "premium", "trial").
     let userStatus: String?
 
+    /// The user plan tier set by the application (e.g., "free", "pro"). Matched case-sensitively
+    /// against Portal-configured per-tier usage limits.
+    var userTier: String? = nil
+
     /// The opaque user identifier set by the application (e.g., an account ID). Never PII.
     let userIdentifier: String?
 
     /// The app feature tag set by the application (e.g., "chat", "summarize").
     let appFeature: String?
+
+    /// The quota anchor day-of-month (1–31) set by the application. Values outside 1–31 are dropped.
+    var quotaAnchorDay: Int? = nil
 
     /// Generates a dictionary of analytics headers.
     ///
@@ -42,6 +49,11 @@ struct AnalyticsHeaders {
             headers["X-User-Status"] = userStatus
         }
 
+        // X-User-Tier: Plan tier provided by developer; enforcement key for per-tier usage limits
+        if let userTier = userTier {
+            headers["X-User-Tier"] = userTier
+        }
+
         // X-Device-Identifier: Vendor identifier (UUID string)
         if let deviceId = await Self.deviceIdentifier() {
             headers["X-Device-Identifier"] = deviceId
@@ -60,6 +72,12 @@ struct AnalyticsHeaders {
         // X-App-Feature: Feature tag provided by developer (e.g., "chat", "summarize")
         if let appFeature = appFeature {
             headers["X-App-Feature"] = appFeature
+        }
+
+        // X-Quota-Anchor-Day: Billing-cycle anchor day provided by developer (1–31).
+        // Out-of-range values are dropped; the Proxy also ignores invalid values.
+        if let quotaAnchorDay = quotaAnchorDay, (1...31).contains(quotaAnchorDay) {
+            headers["X-Quota-Anchor-Day"] = String(quotaAnchorDay)
         }
 
         // X-Environment: Build environment ("development", "testflight", "production")
