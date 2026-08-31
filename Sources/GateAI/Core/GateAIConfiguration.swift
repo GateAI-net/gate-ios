@@ -25,6 +25,7 @@ public struct GateAIConfiguration: Sendable {
         guard !bundleIdentifier.isEmpty else {
             throw GateAIError.configuration("bundleIdentifier cannot be empty.")
         }
+        try Self.validateTeamIdentifier(teamIdentifier)
 
         self.baseURL = baseURL
         self.bundleIdentifier = bundleIdentifier
