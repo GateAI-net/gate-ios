@@ -88,7 +88,7 @@ struct AnalyticsHeaders {
             headers["X-Device-Model"] = deviceModel
         }
 
-        // X-SDK-Version: Gate/AI SDK version (e.g., "1.1.0")
+        // X-SDK-Version: Gate/AI SDK version (e.g., "1.2.0")
         headers["X-SDK-Version"] = GateAIVersion.current
 
         return headers
