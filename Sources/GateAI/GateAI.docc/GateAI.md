@@ -67,6 +67,11 @@ let (data, response) = try await client.performProxyRequest(
 
 - <doc:MakingRequests>
 
+### Usage Limits
+
+- ``GateAIQuotaStatus``
+- ``GateAIRateLimitInfo``
+
 ### Logging
 
 - ``GateAILogLevel``

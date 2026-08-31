@@ -56,6 +56,11 @@ import Foundation
 /// - ``userIdentifier``
 /// - ``appFeature``
 ///
+/// ### Usage Limits
+///
+/// - ``userTier``
+/// - ``quotaAnchorDay``
+///
 /// ### Managing State
 ///
 /// - ``currentAccessToken()``
@@ -75,7 +80,8 @@ public final class GateAIClient: @unchecked Sendable {
     /// Optional user status for analytics (e.g., "free", "premium", "trial").
     ///
     /// This value is included in the `X-User-Status` header on all authenticated requests.
-    /// Set this property to track different user segments or subscription tiers in your analytics.
+    /// Set this property to track different user segments in your analytics.
+    /// For tier-based usage limit enforcement, use ``userTier`` instead.
     ///
     /// ## Example
     ///
@@ -85,6 +91,21 @@ public final class GateAIClient: @unchecked Sendable {
     /// client.userStatus = "free-trial"
     /// ```
     public var userStatus: String?
+
+    /// Optional user plan tier for per-tier usage limits (e.g., "free", "pro").
+    ///
+    /// This value is included in the `X-User-Tier` header on all authenticated requests.
+    /// Per-tier usage limits configured in the Portal match this value exactly (case-sensitive).
+    /// Use ``userStatus`` for free-form analytics segmentation instead.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.userTier = "pro"
+    /// // or
+    /// client.userTier = "free"
+    /// ```
+    public var userTier: String?
 
     /// Optional opaque user identifier for analytics (e.g., an account ID from your own system).
     ///
@@ -115,6 +136,35 @@ public final class GateAIClient: @unchecked Sendable {
     /// client.appFeature = "summarize"
     /// ```
     public var appFeature: String?
+
+    /// Optional day-of-month (1–31) anchoring device usage windows to the user's billing cycle.
+    ///
+    /// Set this to the day of the month the user's subscription renews, read from StoreKit,
+    /// RevenueCat, or your own billing system. The value is included in the `X-Quota-Anchor-Day`
+    /// header on all authenticated requests and enables the `cycle` device usage window when
+    /// your gate has one configured. Changing it later is safe — usage windows are computed
+    /// server-side at read time. The header is stripped before the request reaches the AI provider.
+    ///
+    /// Values outside 1–31 are not sent (the SDK logs a warning once and drops the header).
+    /// Days 29–31 are fine to send as-is — the server clamps to shorter months.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// client.quotaAnchorDay = 15  // subscription renews on the 15th
+    /// // On logout or when the anchor is unknown
+    /// client.quotaAnchorDay = nil
+    /// ```
+    public var quotaAnchorDay: Int? {
+        didSet {
+            if let day = quotaAnchorDay, !(1...31).contains(day), !didWarnAboutInvalidQuotaAnchorDay {
+                didWarnAboutInvalidQuotaAnchorDay = true
+                logger.warning("quotaAnchorDay \(day) is outside 1–31; the X-Quota-Anchor-Day header will not be sent.")
+            }
+        }
+    }
+
+    private var didWarnAboutInvalidQuotaAnchorDay = false
 
     /// Creates a new Gate/AI client with the specified configuration.
     ///
@@ -203,8 +253,10 @@ public final class GateAIClient: @unchecked Sendable {
         // Add analytics headers
         let analyticsHeaders = AnalyticsHeaders(
             userStatus: userStatus,
+            userTier: userTier,
             userIdentifier: userIdentifier,
-            appFeature: appFeature
+            appFeature: appFeature,
+            quotaAnchorDay: quotaAnchorDay
         )
         let analyticsValues = await analyticsHeaders.headers()
         headers.merge(analyticsValues) { current, _ in current }

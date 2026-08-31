@@ -142,8 +142,34 @@ public struct ServerErrorResponse: Codable, Sendable {
     /// An optional human-readable description of the error.
     public let errorDescription: String?
 
+    /// The rejection code for `rate_limited` errors (e.g. `device_daily_requests_exceeded`).
+    public let code: String?
+
+    /// A human-readable message for `rate_limited` errors.
+    public let message: String?
+
+    /// The raw usage window for device-window `rate_limited` errors
+    /// (`daily`, `monthly`, `rolling_30d`, or `cycle`).
+    public let window: String?
+
+    /// The configured limit for device-window `rate_limited` errors.
+    public let limit: Int?
+
+    /// Usage counted against the window (excluding the rejected request)
+    /// for device-window `rate_limited` errors.
+    public let used: Int?
+
+    /// The raw ISO8601 timestamp at which capacity returns, for device-window `rate_limited` errors.
+    public let resetsAt: String?
+
     enum CodingKeys: String, CodingKey {
         case error
         case errorDescription = "error_description"
+        case code
+        case message
+        case window
+        case limit
+        case used
+        case resetsAt = "resets_at"
     }
 }
