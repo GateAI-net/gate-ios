@@ -4,6 +4,11 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - Unreleased
+
+### Changed
+- Align the native SDK version with Android at 1.2.0. This version bump does not change iOS runtime behavior.
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
