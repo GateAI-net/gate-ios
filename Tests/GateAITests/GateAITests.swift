@@ -329,7 +329,7 @@ import Testing
 
 @Test func quotaStatusExposedOnHTTPURLResponse() throws {
     let response = try #require(HTTPURLResponse(
-        url: URL(string: "https://example.gate-ai.net/openai/chat/completions")!,
+        url: URL(string: "https://example.gate-ai.net/v1/chat/completions")!,
         statusCode: 200,
         httpVersion: "HTTP/1.1",
         headerFields: [
@@ -438,4 +438,21 @@ import Testing
 
     let nonRateLimited = GateAIError.server(statusCode: 429, error: nil, headers: nil)
     #expect(nonRateLimited.rateLimitInfo == nil)
+}
+
+@Test func realtimeCallBodyCarriesOfferAndSessionAsMultipart() throws {
+    let session = Data(#"{"type":"realtime","model":"gpt-realtime"}"#.utf8)
+    let body = RealtimeCallRequest.multipartBody(offerSDP: "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\n", session: session, boundary: "b")
+    let text = try #require(String(data: body, encoding: .utf8))
+
+    #expect(text.hasPrefix("--b\r\nContent-Disposition: form-data; name=\"sdp\"\r\nContent-Type: application/sdp\r\n\r\nv=0\r\n"))
+    #expect(text.contains("\r\n--b\r\nContent-Disposition: form-data; name=\"session\"\r\nContent-Type: application/json\r\n\r\n{\"type\":\"realtime\",\"model\":\"gpt-realtime\"}\r\n"))
+    #expect(text.hasSuffix("\r\n--b--\r\n"))
+}
+
+@Test func realtimeCallIdIsReadFromTheLocationHeader() {
+    #expect(RealtimeCallRequest.callId(fromLocation: "/v1/realtime/calls/rtc_abc123") == "rtc_abc123")
+    #expect(RealtimeCallRequest.callId(fromLocation: "https://api.openai.com/v1/realtime/calls/rtc_x?y=1") == "rtc_x")
+    #expect(RealtimeCallRequest.callId(fromLocation: "/v1/realtime/calls/") == nil)
+    #expect(RealtimeCallRequest.callId(fromLocation: nil) == nil)
 }

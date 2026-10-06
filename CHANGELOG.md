@@ -6,6 +6,12 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
 
 ## [1.2.0] - Unreleased
 
+### Added
+- **OpenAI Realtime voice.** `client.createRealtimeCall(offerSDP:session:)` exchanges a WebRTC
+  SDP offer for OpenAI's answer through the gate and returns the call ID. Audio flows directly
+  between the device and OpenAI while the gate meters each model turn and applies usage limits
+  for the whole call. Bring your own WebRTC library.
+
 ### Changed
 - Align the native SDK version with Android at 1.2.0. This version bump does not change iOS runtime behavior.
 
