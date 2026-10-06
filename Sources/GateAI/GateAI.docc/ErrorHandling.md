@@ -154,7 +154,7 @@ Here's a complete example showing how to handle all error types:
 func makeAuthenticatedRequest() async {
     do {
         let (data, response) = try await client.performProxyRequest(
-            path: "openai/chat/completions",
+            path: "v1/chat/completions",
             method: .post,
             body: requestBody,
             additionalHeaders: ["Content-Type": "application/json"]
@@ -252,7 +252,7 @@ func performRequestWithRetry(maxAttempts: Int = 3) async throws -> Data {
     for attempt in 1...maxAttempts {
         do {
             let (data, response) = try await client.performProxyRequest(
-                path: "openai/chat/completions",
+                path: "v1/chat/completions",
                 method: .post,
                 body: requestBody
             )

@@ -16,7 +16,7 @@ import Foundation
 ///
 /// ```swift
 /// let (data, response) = try await client.performProxyRequest(
-///     path: "openai/chat/completions",
+///     path: "v1/chat/completions",
 ///     method: .post,
 ///     body: requestBody,
 ///     additionalHeaders: ["Content-Type": "application/json"]

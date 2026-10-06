@@ -25,7 +25,7 @@ import Foundation
 ///
 /// // Make authenticated requests
 /// let (data, response) = try await client.performProxyRequest(
-///     path: "openai/chat/completions",
+///     path: "v1/chat/completions",
 ///     method: .post,
 ///     body: requestBody,
 ///     additionalHeaders: ["Content-Type": "application/json"]
@@ -235,7 +235,7 @@ public final class GateAIClient: @unchecked Sendable {
     ///
     /// ```swift
     /// let headers = try await client.authorizationHeaders(
-    ///     for: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!,
+    ///     for: URL(string: "https://yourteam.in.gate-ai.net/v1/chat/completions")!,
     ///     method: .post
     /// )
     /// var request = URLRequest(url: url)
@@ -270,7 +270,7 @@ public final class GateAIClient: @unchecked Sendable {
     /// from your configuration.
     ///
     /// - Parameters:
-    ///   - path: The path relative to your base URL (e.g., "openai/chat/completions").
+    ///   - path: The path relative to your base URL (e.g., "v1/chat/completions").
     ///   - method: The HTTP method (GET or POST).
     ///   - nonce: Optional DPoP nonce from a previous 401 response.
     ///
@@ -282,7 +282,7 @@ public final class GateAIClient: @unchecked Sendable {
     ///
     /// ```swift
     /// let headers = try await client.authorizationHeaders(
-    ///     for: "openai/chat/completions",
+    ///     for: "v1/chat/completions",
     ///     method: .post
     /// )
     /// ```
@@ -400,7 +400,7 @@ public final class GateAIClient: @unchecked Sendable {
     /// ```swift
     /// let requestBody = try JSONEncoder().encode(myRequest)
     /// let (data, response) = try await client.performProxyRequest(
-    ///     to: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!,
+    ///     to: URL(string: "https://yourteam.in.gate-ai.net/v1/chat/completions")!,
     ///     method: .post,
     ///     body: requestBody,
     ///     additionalHeaders: ["Content-Type": "application/json"]
@@ -421,7 +421,7 @@ public final class GateAIClient: @unchecked Sendable {
     /// It automatically handles authentication, DPoP proof generation, and nonce challenges.
     ///
     /// - Parameters:
-    ///   - path: The path relative to your base URL (e.g., "openai/chat/completions").
+    ///   - path: The path relative to your base URL (e.g., "v1/chat/completions").
     ///   - method: The HTTP method to use.
     ///   - body: Optional request body data.
     ///   - additionalHeaders: Additional headers to include in the request (e.g., "Content-Type").
@@ -441,7 +441,7 @@ public final class GateAIClient: @unchecked Sendable {
     /// """.data(using: .utf8)!
     ///
     /// let (data, response) = try await client.performProxyRequest(
-    ///     path: "openai/chat/completions",
+    ///     path: "v1/chat/completions",
     ///     method: .post,
     ///     body: requestBody,
     ///     additionalHeaders: ["Content-Type": "application/json"]

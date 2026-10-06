@@ -79,7 +79,7 @@ let requestBody = """
 """.data(using: .utf8)!
 
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: requestBody,
     additionalHeaders: ["Content-Type": "application/json"]
@@ -115,7 +115,7 @@ Note: dev tokens provide unchecked access to your gated service. Keep it safe!
 
 ```swift
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/models",
+    path: "v1/models",
     method: .get
 )
 ```
@@ -132,12 +132,33 @@ let request = ChatRequest(model: "gpt-4", messages: [...])
 let body = try JSONEncoder().encode(request)
 
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: body,
     additionalHeaders: ["Content-Type": "application/json"]
 )
 ```
+
+### Realtime Voice (OpenAI)
+
+OpenAI's Realtime API runs over WebRTC. The gate brokers the signalling so your provider key stays server-side: your app creates the peer connection and SDP offer, `createRealtimeCall` exchanges it through the gate for OpenAI's answer, and audio then flows directly between the device and OpenAI. The gate meters every model turn and applies your usage limits for the whole call. Bring your own WebRTC library (for example `WebRTC` / `stasel/WebRTC`).
+
+```swift
+let offer = try await peerConnection.offer(for: constraints)
+try await peerConnection.setLocalDescription(offer)
+
+let answer = try await client.createRealtimeCall(
+    offerSDP: offer.sdp,
+    session: ["type": "realtime", "model": "gpt-realtime"],
+    additionalHeaders: ["X-App-Feature": "voice-assistant"]
+)
+try await peerConnection.setRemoteDescription(
+    RTCSessionDescription(type: .answer, sdp: answer.sdp)
+)
+// answer.callId ("rtc_…") is how the call appears in your Gate/AI logs
+```
+
+A device that exhausts its token budget mid-call is hung up by the gate: the peer connection disconnects and the data channel closes. Ephemeral client secrets (`/v1/realtime/client_secrets`) are refused with 403 because they would bypass metering. See the [Realtime guide](https://portal.gate-ai.net/docs/realtime) for how calls appear in Logs and Analytics.
 
 ### Error Handling
 
@@ -224,7 +245,7 @@ When device usage windows are configured, successful proxied responses include `
 
 ```swift
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: requestBody,
     additionalHeaders: ["Content-Type": "application/json"]

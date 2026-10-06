@@ -63,7 +63,7 @@ Before calling any Gate/AI proxied endpoint, obtain authorization headers that i
 
 ```swift
 func performGateAIRequest() async throws {
-    let apiPath = "openai/chat/completions"
+    let apiPath = "v1/chat/completions"
 
     // Compose your request body and additional headers
     let bodyData = try JSONEncoder().encode(MyPromptRequest(...))
@@ -128,7 +128,7 @@ You can delegate proxy calls entirely to the client:
 
 ```swift
 let (data, response) = try await gateAIClient.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: bodyData,
     additionalHeaders: ["Content-Type": "application/json"]

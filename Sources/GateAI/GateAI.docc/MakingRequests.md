@@ -19,7 +19,7 @@ let requestBody = """
 """.data(using: .utf8)!
 
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: requestBody,
     additionalHeaders: ["Content-Type": "application/json"]
@@ -45,12 +45,12 @@ For more control over the request, get authorization headers and construct your 
 ```swift
 // Get headers for a specific path
 let headers = try await client.authorizationHeaders(
-    for: "openai/chat/completions",
+    for: "v1/chat/completions",
     method: .post
 )
 
 // Construct your request
-var request = URLRequest(url: URL(string: "https://yourteam.in.gate-ai.net/openai/chat/completions")!)
+var request = URLRequest(url: URL(string: "https://yourteam.in.gate-ai.net/v1/chat/completions")!)
 request.httpMethod = "POST"
 request.httpBody = requestBody
 
@@ -74,7 +74,7 @@ For GET requests, omit the body:
 
 ```swift
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/models",
+    path: "v1/models",
     method: .get
 )
 
@@ -100,7 +100,7 @@ let request = ChatRequest(
 let body = try JSONEncoder().encode(request)
 
 let (data, response) = try await client.performProxyRequest(
-    path: "openai/chat/completions",
+    path: "v1/chat/completions",
     method: .post,
     body: body,
     additionalHeaders: ["Content-Type": "application/json"]
@@ -114,12 +114,12 @@ For server-sent events or streaming responses:
 ```swift
 // Get authorization headers
 let headers = try await client.authorizationHeaders(
-    for: "openai/chat/completions",
+    for: "v1/chat/completions",
     method: .post
 )
 
 // Create URLRequest
-var request = URLRequest(url: configuration.baseURL.appendingPathComponent("openai/chat/completions"))
+var request = URLRequest(url: configuration.baseURL.appendingPathComponent("v1/chat/completions"))
 request.httpMethod = "POST"
 request.httpBody = requestBody
 headers.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
@@ -143,7 +143,7 @@ The ``GateAIClient/performProxyRequest(path:method:body:additionalHeaders:)`` me
 ```swift
 do {
     // First attempt
-    var headers = try await client.authorizationHeaders(for: "openai/chat/completions", method: .post)
+    var headers = try await client.authorizationHeaders(for: "v1/chat/completions", method: .post)
     let (data, response) = try await makeRequest(with: headers)
 
 } catch let error {
@@ -151,7 +151,7 @@ do {
     if let nonce = client.extractDPoPNonce(from: error) {
         // Retry with nonce
         let headers = try await client.authorizationHeaders(
-            for: "openai/chat/completions",
+            for: "v1/chat/completions",
             method: .post,
             nonce: nonce
         )
@@ -169,7 +169,7 @@ Handle errors appropriately for different scenarios:
 ```swift
 do {
     let (data, response) = try await client.performProxyRequest(
-        path: "openai/chat/completions",
+        path: "v1/chat/completions",
         method: .post,
         body: requestBody,
         additionalHeaders: ["Content-Type": "application/json"]
@@ -221,9 +221,9 @@ The SDK is thread-safe and handles concurrent requests efficiently:
 
 ```swift
 // Multiple requests in parallel
-async let response1 = client.performProxyRequest(path: "openai/models", method: .get)
-async let response2 = client.performProxyRequest(path: "openai/chat/completions", method: .post, body: body1)
-async let response3 = client.performProxyRequest(path: "openai/chat/completions", method: .post, body: body2)
+async let response1 = client.performProxyRequest(path: "v1/models", method: .get)
+async let response2 = client.performProxyRequest(path: "v1/chat/completions", method: .post, body: body1)
+async let response3 = client.performProxyRequest(path: "v1/chat/completions", method: .post, body: body2)
 
 let results = try await (response1, response2, response3)
 ```
