@@ -4,7 +4,7 @@ All notable changes to the Gate/AI iOS SDK are documented here. The format follo
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - Unreleased
+## [1.2.0] - 2026-10-14
 
 ### Added
 - **OpenAI Realtime.** `client.createRealtimeCall(offerSDP:session:)` starts a Realtime session
